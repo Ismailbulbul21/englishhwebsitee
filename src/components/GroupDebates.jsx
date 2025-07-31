@@ -23,11 +23,13 @@ export default function GroupDebates({ user }) {
   const [groupName, setGroupName] = useState('')
   const [loading, setLoading] = useState(true)
   const [creating, setCreating] = useState(false)
+  const [currentSchedule, setCurrentSchedule] = useState(null)
 
   useEffect(() => {
     if (user) {
       fetchGroups()
       fetchDebateTopics()
+      fetchCurrentSchedule()
     }
   }, [user])
 
@@ -67,6 +69,23 @@ export default function GroupDebates({ user }) {
       console.error('Error fetching debate topics:', error)
     } finally {
       setLoading(false)
+    }
+  }
+
+  const fetchCurrentSchedule = async () => {
+    try {
+      const { data, error } = await supabase
+        .rpc('get_level_schedule', { level_param: user.english_level })
+
+      if (error) throw error
+      setCurrentSchedule(data)
+    } catch (error) {
+      console.error('Error fetching schedule:', error)
+      // Fallback to default times if database fails
+      setCurrentSchedule({
+        start_time: '20:00:00',
+        end_time: '23:00:00'
+      })
     }
   }
 
@@ -153,6 +172,24 @@ export default function GroupDebates({ user }) {
     })
   }
 
+  const formatTimeFromString = (timeString) => {
+    if (!timeString) return ''
+    const [hours, minutes] = timeString.split(':')
+    const date = new Date()
+    date.setHours(parseInt(hours), parseInt(minutes))
+    return date.toLocaleTimeString([], { 
+      hour: '2-digit', 
+      minute: '2-digit' 
+    })
+  }
+
+  const getScheduleDisplay = () => {
+    if (!currentSchedule) return 'Loading schedule...'
+    const startTime = formatTimeFromString(currentSchedule.start_time)
+    const endTime = formatTimeFromString(currentSchedule.end_time)
+    return `${startTime} - ${endTime}`
+  }
+
   const getGroupStatusColor = (status) => {
     switch (status) {
       case 'waiting': return 'text-yellow-400 bg-yellow-500/10 border-yellow-500/30'
@@ -205,7 +242,7 @@ export default function GroupDebates({ user }) {
             <div className="flex flex-col sm:flex-row sm:items-center space-y-2 sm:space-y-0 sm:space-x-4">
               <div className="flex items-center space-x-2 text-gray-300">
                 <Clock className="h-4 w-4" />
-                <span className="text-sm">8:00 PM - 11:00 PM</span>
+                <span className="text-sm">{getScheduleDisplay()}</span>
               </div>
               <button
                 onClick={() => setShowCreateModal(true)}
