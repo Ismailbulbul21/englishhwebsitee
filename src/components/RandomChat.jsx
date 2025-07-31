@@ -29,7 +29,6 @@ export default function RandomChat({ user }) {
   const [selectedUser, setSelectedUser] = useState(null)
   const [requestMessage, setRequestMessage] = useState('')
   const [realtimeStatus, setRealtimeStatus] = useState('connecting') // 'connecting', 'connected', 'disconnected'
-  const [showRealtimeNotification, setShowRealtimeNotification] = useState(false)
   
   const messagesEndRef = useRef(null)
   const subscriptionsRef = useRef(new Map())
@@ -48,17 +47,6 @@ export default function RandomChat({ user }) {
     formatTime,
     cleanup: cleanupVoice
   } = useVoiceRecording()
-
-  // Show notification when real-time connects
-  useEffect(() => {
-    if (realtimeStatus === 'connected' && !showRealtimeNotification) {
-      setShowRealtimeNotification(true)
-      // Auto-hide after 3 seconds
-      setTimeout(() => {
-        setShowRealtimeNotification(false)
-      }, 3000)
-    }
-  }, [realtimeStatus, showRealtimeNotification])
 
   // Optimized scroll to bottom
   const scrollToBottom = useCallback(() => {
@@ -745,16 +733,6 @@ export default function RandomChat({ user }) {
       </header>
 
       <div className="max-w-6xl mx-auto px-6 py-6">
-        {/* Real-time Connection Notification */}
-        {showRealtimeNotification && (
-          <div className="fixed top-4 right-4 z-50 bg-green-500 text-white px-4 py-2 rounded-xl shadow-lg animate-slide-in-right">
-            <div className="flex items-center space-x-2">
-              <div className="w-2 h-2 bg-white rounded-full animate-pulse"></div>
-              <span className="text-sm font-medium">Real-time messaging active!</span>
-            </div>
-          </div>
-        )}
-
         {error && (
           <div className="mb-4 p-4 bg-red-500/10 border border-red-500/30 rounded-xl">
             <div className="flex items-center justify-between">
