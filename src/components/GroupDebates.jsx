@@ -183,21 +183,21 @@ export default function GroupDebates({ user }) {
       {/* Header */}
       <header className="bg-gray-800 border-b border-gray-700">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div className="flex items-center space-x-4">
+          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center py-4 space-y-3 sm:space-y-0">
+            <div className="flex items-center space-x-2 sm:space-x-4">
               <Link
                 to="/"
                 className="flex items-center space-x-2 text-gray-400 hover:text-white transition-colors"
               >
                 <ArrowLeft className="h-5 w-5" />
-                <span>Dashboard</span>
+                <span className="hidden sm:inline">Dashboard</span>
               </Link>
-              <div className="h-6 w-px bg-gray-600"></div>
-              <Users className="h-6 w-6 text-purple-500" />
-              <h1 className="text-xl font-bold text-white">Doodaha Fiidka</h1>
+              <div className="hidden sm:block h-6 w-px bg-gray-600"></div>
+              <Users className="h-5 w-5 sm:h-6 sm:w-6 text-purple-500" />
+              <h1 className="text-lg sm:text-xl font-bold text-white">Doodaha Fiidka</h1>
             </div>
             
-            <div className="flex items-center space-x-4">
+            <div className="flex flex-col sm:flex-row sm:items-center space-y-2 sm:space-y-0 sm:space-x-4">
               <div className="flex items-center space-x-2 text-gray-300">
                 <Clock className="h-4 w-4" />
                 <span className="text-sm">8:00 PM - 11:00 PM</span>
@@ -205,7 +205,7 @@ export default function GroupDebates({ user }) {
               <button
                 onClick={() => setShowCreateModal(true)}
                 disabled={!canCreateGroup()}
-                className="flex items-center space-x-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 disabled:bg-gray-600 disabled:cursor-not-allowed rounded-lg transition-colors"
+                className="flex items-center justify-center space-x-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 disabled:bg-gray-600 disabled:cursor-not-allowed rounded-lg transition-colors"
               >
                 <Plus className="h-4 w-4" />
                 <span className="text-white text-sm">Create Group</span>
@@ -215,24 +215,24 @@ export default function GroupDebates({ user }) {
         </div>
       </header>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8">
         {/* Level Info */}
-        <div className={`rounded-xl p-6 border mb-8 ${
+        <div className={`rounded-xl p-4 sm:p-6 border mb-6 sm:mb-8 ${
           user?.english_level === 'beginner' ? 'bg-green-500/10 border-green-500/30' :
           user?.english_level === 'intermediate' ? 'bg-yellow-500/10 border-yellow-500/30' :
           'bg-red-500/10 border-red-500/30'
         }`}>
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-3 sm:space-y-0">
             <div>
-              <h2 className={`text-2xl font-bold mb-2 ${getLevelColor(user?.english_level)}`}>
+              <h2 className={`text-xl sm:text-2xl font-bold mb-2 ${getLevelColor(user?.english_level)}`}>
                 {user?.english_level?.charAt(0).toUpperCase() + user?.english_level?.slice(1)} Level Debates
               </h2>
-              <p className="text-gray-300">
+              <p className="text-gray-300 text-sm sm:text-base">
                 Join evening group discussions with learners at your level
               </p>
             </div>
-            <div className="text-right">
-              <div className="text-2xl font-bold text-white">{groups.length}/5</div>
+            <div className="text-center sm:text-right">
+              <div className="text-xl sm:text-2xl font-bold text-white">{groups.length}/5</div>
               <div className="text-sm text-gray-400">Active Groups</div>
             </div>
           </div>
@@ -240,7 +240,7 @@ export default function GroupDebates({ user }) {
 
         {/* Groups Grid */}
         {groups.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
             {groups.map((group) => {
               const isParticipant = group.participants?.includes(user.id)
               const participantCount = group.participants?.length || 0
@@ -249,7 +249,7 @@ export default function GroupDebates({ user }) {
               return (
                 <div
                   key={group.id}
-                  className="bg-gray-800 rounded-xl p-6 border border-gray-700 hover:border-gray-600 transition-colors"
+                  className="bg-gray-800 rounded-xl p-4 sm:p-6 border border-gray-700 hover:border-gray-600 transition-colors"
                 >
                   {/* Group Header */}
                   <div className="flex items-start justify-between mb-4">
@@ -355,7 +355,7 @@ export default function GroupDebates({ user }) {
         {/* Create Group Modal */}
         {showCreateModal && (
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-            <div className="bg-gray-800 rounded-xl p-6 w-full max-w-md border border-gray-700">
+            <div className="bg-gray-800 rounded-xl p-4 sm:p-6 w-full max-w-md border border-gray-700 mx-4">
               <h3 className="text-xl font-bold text-white mb-4">Create Debate Group</h3>
               
               <div className="space-y-4">
