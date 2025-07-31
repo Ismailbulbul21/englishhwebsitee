@@ -41,18 +41,37 @@ export default function GroupChat({ user }) {
         setLoading(true)
         
         // Load group information
+        console.log('🔍 Loading group with ID:', groupId)
         const { data: groupData, error: groupError } = await supabase
           .from('groups')
           .select(`
             *,
             topic:debate_topics(title, description),
-            host:users(display_name),
-            chat_session:chat_sessions(*)
+            host:users(display_name)
           `)
           .eq('id', groupId)
           .single()
 
-        if (groupError) throw groupError
+        if (groupError) {
+          console.error('❌ Group loading error:', groupError)
+          throw groupError
+        }
+
+        console.log('✅ Group data loaded:', groupData)
+
+        // Load chat session separately
+        const { data: chatSessionData, error: chatError } = await supabase
+          .from('chat_sessions')
+          .select('*')
+          .eq('group_id', groupId)
+          .single()
+
+        if (chatError) {
+          console.error('❌ Chat session loading error:', chatError)
+          throw chatError
+        }
+
+        console.log('✅ Chat session loaded:', chatSessionData)
 
         // Check if user is a participant
         if (!groupData.participants.includes(user.id)) {
@@ -61,27 +80,38 @@ export default function GroupChat({ user }) {
         }
 
         setGroup(groupData)
-        setChatSession(groupData.chat_session)
+        setChatSession(chatSessionData)
 
         // Load participants
+        console.log('🔍 Loading participants:', groupData.participants)
         const { data: participantData, error: participantError } = await supabase
           .from('users')
           .select('id, display_name, english_level')
           .in('id', groupData.participants)
 
-        if (!participantError) {
+        if (participantError) {
+          console.error('❌ Participants loading error:', participantError)
+        } else {
+          console.log('✅ Participants loaded:', participantData)
           setParticipants(participantData || [])
         }
 
         // Load messages
-        if (groupData.chat_session?.id) {
-          await loadMessages(groupData.chat_session.id)
-          setupRealtimeSubscription(groupData.chat_session.id)
+        if (chatSessionData?.id) {
+          await loadMessages(chatSessionData.id)
+          setupRealtimeSubscription(chatSessionData.id)
         }
 
       } catch (error) {
-        console.error('Error loading group chat:', error)
-        setError('Failed to load group chat')
+        console.error('❌ Error loading group chat:', error)
+        console.error('Error details:', {
+          message: error.message,
+          code: error.code,
+          details: error.details,
+          hint: error.hint,
+          stack: error.stack
+        })
+        setError(`Failed to load group chat: ${error.message || 'Unknown error'}`)
       } finally {
         setLoading(false)
       }
