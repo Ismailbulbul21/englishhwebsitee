@@ -8,6 +8,7 @@ import Lessons from './components/Lessons'
 import Quiz from './components/Quiz'
 import RandomChat from './components/RandomChat'
 import GroupDebates from './components/GroupDebates'
+import GroupChat from './components/GroupChat'
 import Progress from './components/Progress'
 import LoadingSpinner from './components/LoadingSpinner'
 
@@ -359,6 +360,7 @@ function App() {
             <Route path="/quiz" element={<Quiz user={user} />} />
             <Route path="/chat" element={<RandomChat user={user} />} />
             <Route path="/debates" element={<GroupDebates user={user} />} />
+            <Route path="/group/:groupId" element={<GroupChat user={user} />} />
             <Route path="/progress" element={<Progress user={user} />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>

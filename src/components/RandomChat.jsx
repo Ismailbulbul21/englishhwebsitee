@@ -138,7 +138,7 @@ export default function RandomChat({ user }) {
       if (activeSessions && activeSessions.length > 0) {
         const loadedChats = await Promise.all(
           activeSessions.map(async (session) => {
-            console.log('📥 Loading chat session:', session.id)
+            console.log('📥 Loading chat session:', session.id, 'type:', session.type)
             
             const partnerId = session.participants.find(id => id !== user.id)
             let partnerData = null

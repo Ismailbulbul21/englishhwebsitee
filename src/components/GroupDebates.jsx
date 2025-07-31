@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { 
   ArrowLeft, 
@@ -15,6 +15,7 @@ import {
 } from 'lucide-react'
 
 export default function GroupDebates({ user }) {
+  const navigate = useNavigate()
   const [groups, setGroups] = useState([])
   const [debateTopics, setDebateTopics] = useState([])
   const [selectedTopic, setSelectedTopic] = useState(null)
@@ -131,7 +132,11 @@ export default function GroupDebates({ user }) {
 
       if (data) {
         fetchGroups()
-        alert('Successfully joined the group!')
+        alert('Successfully joined the group! Redirecting to group chat...')
+        // Navigate to the specific group chat
+        setTimeout(() => {
+          navigate(`/group/${groupId}`)
+        }, 1500)
       } else {
         alert('Failed to join group. It might be full or no longer available.')
       }
@@ -302,13 +307,22 @@ export default function GroupDebates({ user }) {
                   {/* Actions */}
                   <div className="flex space-x-2">
                     {isParticipant ? (
-                      <button
-                        disabled
-                        className="flex-1 flex items-center justify-center space-x-2 py-2 bg-green-600 rounded-lg cursor-not-allowed"
-                      >
-                        <CheckCircle className="h-4 w-4" />
-                        <span className="text-white text-sm">Joined</span>
-                      </button>
+                      <>
+                        <button
+                          disabled
+                          className="flex-1 flex items-center justify-center space-x-2 py-2 bg-green-600 rounded-lg cursor-not-allowed"
+                        >
+                          <CheckCircle className="h-4 w-4" />
+                          <span className="text-white text-sm">Joined</span>
+                        </button>
+                        <Link
+                          to={`/group/${group.id}`}
+                          className="flex-1 flex items-center justify-center space-x-2 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors"
+                        >
+                          <MessageCircle className="h-4 w-4" />
+                          <span className="text-white text-sm">Enter Chat</span>
+                        </Link>
+                      </>
                     ) : group.status === 'full' ? (
                       <button
                         disabled
