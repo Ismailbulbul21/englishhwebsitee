@@ -172,32 +172,84 @@ export default function GroupChat({ user }) {
 
   // Setup realtime subscription
   const setupRealtimeSubscription = (sessionId) => {
+    console.log('🔔 Setting up real-time subscription for group session:', sessionId)
+    
     subscriptionRef.current = supabase
-      .channel(`group_chat_${sessionId}`)
+      .channel(`group_chat_${sessionId}_${Date.now()}`) // Unique channel name
       .on('postgres_changes', {
         event: 'INSERT',
         schema: 'public',
         table: 'messages',
         filter: `chat_session_id=eq.${sessionId}`
-      }, (payload) => {
+      }, async (payload) => {
+        console.log('📨 Real-time group message received:', payload.new)
+        
+        // Only process messages from other users
         if (payload.new.sender_id !== user.id) {
-          // Load the new message with sender info
-          supabase
-            .from('messages')
-            .select(`
-              *,
-              sender:users(display_name, english_level)
-            `)
-            .eq('id', payload.new.id)
-            .single()
-            .then(({ data, error }) => {
-              if (!error && data) {
-                setMessages(prev => [...prev, data])
-              }
-            })
+          console.log('👤 Group message from other user, processing...')
+          
+          try {
+            // Fetch complete message data with sender info
+            const { data: messageData, error } = await supabase
+              .from('messages')
+              .select(`
+                *,
+                sender:users(display_name, english_level)
+              `)
+              .eq('id', payload.new.id)
+              .single()
+
+            if (error) {
+              console.error('❌ Error fetching group message data:', error)
+              return
+            }
+
+            if (messageData) {
+              console.log('✅ Adding real-time group message:', messageData.content)
+              
+              // Check for duplicates before adding
+              setMessages(prev => {
+                const messageExists = prev.some(msg => msg.id === messageData.id)
+                if (messageExists) {
+                  console.log('⚠️ Group message already exists, skipping duplicate')
+                  return prev
+                }
+                
+                console.log('📝 Adding new group message from', messageData.sender?.display_name)
+                return [...prev, messageData]
+              })
+            }
+          } catch (error) {
+            console.error('❌ Error processing real-time group message:', error)
+          }
+        } else {
+          console.log('👤 Own group message, ignoring real-time notification')
         }
       })
-      .subscribe()
+      .subscribe((status) => {
+        console.log(`🔔 Group subscription status for session ${sessionId}:`, status)
+        
+        if (status === 'SUBSCRIBED') {
+          console.log(`✅ Real-time group subscription active for session ${sessionId}`)
+        } else if (status === 'CHANNEL_ERROR') {
+          console.error(`❌ Real-time group subscription error for session ${sessionId}`)
+          
+          // Retry subscription after a delay
+          setTimeout(() => {
+            console.log('🔄 Retrying group subscription for session:', sessionId)
+            setupRealtimeSubscription(sessionId)
+          }, 2000)
+        } else if (status === 'TIMED_OUT') {
+          console.warn(`⏰ Group subscription timed out for session ${sessionId}, retrying...`)
+          
+          // Retry subscription
+          setTimeout(() => {
+            setupRealtimeSubscription(sessionId)
+          }, 1000)
+        } else if (status === 'CLOSED') {
+          console.warn(`🔌 Group subscription closed for session ${sessionId}`)
+        }
+      })
   }
 
   // Send message

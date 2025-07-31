@@ -28,6 +28,7 @@ export default function RandomChat({ user }) {
   const [showNewChatModal, setShowNewChatModal] = useState(false)
   const [selectedUser, setSelectedUser] = useState(null)
   const [requestMessage, setRequestMessage] = useState('')
+  const [realtimeStatus, setRealtimeStatus] = useState('connecting') // 'connecting', 'connected', 'disconnected'
   
   const messagesEndRef = useRef(null)
   const subscriptionsRef = useRef(new Map())
@@ -84,6 +85,7 @@ export default function RandomChat({ user }) {
         console.log('- Available Users:', availableUsers)
         console.log('- Loading:', loading)
         console.log('- Error:', error)
+        console.log('- Real-time Status:', realtimeStatus)
         console.log('- Subscriptions:', Array.from(subscriptionsRef.current.keys()))
       }
       
@@ -103,6 +105,24 @@ export default function RandomChat({ user }) {
           console.error('Function test error:', err)
         }
       }
+      
+      window.testRealtimeConnection = () => {
+        console.log('🧪 Testing real-time connection...')
+        console.log('- Real-time Status:', realtimeStatus)
+        console.log('- Active Subscriptions:', subscriptionsRef.current.size)
+        console.log('- Supabase Channel Status:', supabase.channel('test').state)
+        
+        // Test subscription
+        const testChannel = supabase.channel('test-channel')
+        testChannel.subscribe((status) => {
+          console.log('🧪 Test channel status:', status)
+        })
+        
+        setTimeout(() => {
+          testChannel.unsubscribe()
+          console.log('🧪 Test channel unsubscribed')
+        }, 3000)
+      }
     }
     
     return () => {
@@ -120,6 +140,7 @@ export default function RandomChat({ user }) {
         delete window.debugRandomChat
         delete window.refreshChats
         delete window.testChatFunction
+        delete window.testRealtimeConnection
       }
     }
   }, [user])
@@ -247,9 +268,12 @@ export default function RandomChat({ user }) {
     // Clean up existing subscription if it exists
     const existingSubscription = subscriptionsRef.current.get(sessionId)
     if (existingSubscription) {
+      console.log('🧹 Cleaning up existing subscription for session:', sessionId)
       existingSubscription.unsubscribe()
     }
 
+    console.log('🔔 Setting up real-time subscription for session:', sessionId)
+    
     const subscription = supabase
       .channel(`chat_${sessionId}_${Date.now()}`) // Unique channel name
       .on('postgres_changes', {
@@ -257,38 +281,86 @@ export default function RandomChat({ user }) {
         schema: 'public',
         table: 'messages',
         filter: `chat_session_id=eq.${sessionId}`
-      }, (payload) => {
+      }, async (payload) => {
+        console.log('📨 Real-time message received:', payload.new)
+        
+        // Only process messages from other users
         if (payload.new.sender_id !== user.id) {
-          console.log('📨 New message received in session:', sessionId)
+          console.log('👤 Message from other user, processing...')
           
-          supabase
-            .from('messages')
-            .select(`
-              *,
-              sender:users(display_name, english_level)
-            `)
-            .eq('id', payload.new.id)
-            .single()
-            .then(({ data, error }) => {
-              if (!error && data) {
-                setActiveChats(prev => prev.map(chat => 
-                  chat.session.id === sessionId 
-                    ? { 
-                        ...chat, 
-                        messages: [...chat.messages, data],
-                        lastActivity: new Date()
-                      }
-                    : chat
-                ))
-              }
-            })
+          try {
+            // Fetch complete message data with sender info
+            const { data: messageData, error } = await supabase
+              .from('messages')
+              .select(`
+                *,
+                sender:users(display_name, english_level)
+              `)
+              .eq('id', payload.new.id)
+              .single()
+
+            if (error) {
+              console.error('❌ Error fetching message data:', error)
+              return
+            }
+
+            if (messageData) {
+              console.log('✅ Adding real-time message to chat:', messageData.content)
+              
+              // Update the specific chat with new message
+              setActiveChats(prev => prev.map(chat => {
+                if (chat.session.id === sessionId) {
+                  // Check if message already exists to prevent duplicates
+                  const messageExists = chat.messages.some(msg => msg.id === messageData.id)
+                  if (messageExists) {
+                    console.log('⚠️ Message already exists, skipping duplicate')
+                    return chat
+                  }
+                  
+                  console.log('📝 Adding new message to chat with', chat.partner?.display_name)
+                  return { 
+                    ...chat, 
+                    messages: [...chat.messages, messageData],
+                    lastActivity: new Date()
+                  }
+                }
+                return chat
+              }))
+            }
+          } catch (error) {
+            console.error('❌ Error processing real-time message:', error)
+          }
+        } else {
+          console.log('👤 Own message, ignoring real-time notification')
         }
       })
       .subscribe((status) => {
+        console.log(`🔔 Subscription status for session ${sessionId}:`, status)
+        
         if (status === 'SUBSCRIBED') {
-          console.log(`✅ Chat subscription active for session ${sessionId}`)
+          console.log(`✅ Real-time subscription active for session ${sessionId}`)
+          setRealtimeStatus('connected')
         } else if (status === 'CHANNEL_ERROR') {
-          console.error(`❌ Chat subscription error for session ${sessionId}`)
+          console.error(`❌ Real-time subscription error for session ${sessionId}`)
+          setRealtimeStatus('disconnected')
+          
+          // Retry subscription after a delay
+          setTimeout(() => {
+            console.log('🔄 Retrying subscription for session:', sessionId)
+            setRealtimeStatus('connecting')
+            setupChatSubscription(sessionId)
+          }, 2000)
+        } else if (status === 'TIMED_OUT') {
+          console.warn(`⏰ Subscription timed out for session ${sessionId}, retrying...`)
+          setRealtimeStatus('connecting')
+          
+          // Retry subscription
+          setTimeout(() => {
+            setupChatSubscription(sessionId)
+          }, 1000)
+        } else if (status === 'CLOSED') {
+          console.warn(`🔌 Subscription closed for session ${sessionId}`)
+          setRealtimeStatus('disconnected')
         }
       })
 
@@ -799,6 +871,26 @@ export default function RandomChat({ user }) {
                                 {currentChat.partner.gender === 'male' ? '♂' : '♀'}
                               </span>
                             )}
+                            {/* Real-time Status Indicator */}
+                            <div className={`flex items-center space-x-1 px-2 py-1 rounded-full text-xs ${
+                              realtimeStatus === 'connected' 
+                                ? 'bg-green-500/20 text-green-400' 
+                                : realtimeStatus === 'connecting'
+                                ? 'bg-yellow-500/20 text-yellow-400'
+                                : 'bg-red-500/20 text-red-400'
+                            }`}>
+                              <div className={`w-2 h-2 rounded-full ${
+                                realtimeStatus === 'connected' 
+                                  ? 'bg-green-400 animate-pulse' 
+                                  : realtimeStatus === 'connecting'
+                                  ? 'bg-yellow-400 animate-pulse'
+                                  : 'bg-red-400'
+                              }`}></div>
+                              <span>
+                                {realtimeStatus === 'connected' ? 'Live' : 
+                                 realtimeStatus === 'connecting' ? 'Connecting...' : 'Offline'}
+                              </span>
+                            </div>
                           </div>
                           <p className="text-white/60 text-sm">
                             {currentChat.partner?.english_level} level • Online
