@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { Link, useParams, useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
+import { useVoiceRecording } from '../lib/useVoiceRecording'
+import VoiceMessage from './VoiceMessage'
 import { 
   ArrowLeft, 
   MessageCircle, 
@@ -9,7 +11,8 @@ import {
   Clock,
   Hash,
   Crown,
-  Settings
+  Settings,
+  Mic
 } from 'lucide-react'
 
 export default function GroupChat({ user }) {
@@ -26,6 +29,21 @@ export default function GroupChat({ user }) {
   
   const messagesEndRef = useRef(null)
   const subscriptionRef = useRef(null)
+
+  // Voice recording hook
+  const {
+    isRecording,
+    recordingTime,
+    audioBlob,
+    isUploading,
+    error: voiceError,
+    startRecording,
+    stopRecording,
+    cancelRecording,
+    uploadVoiceMessage,
+    formatTime,
+    cleanup: cleanupVoice
+  } = useVoiceRecording()
 
   // Auto-scroll to bottom
   const scrollToBottom = useCallback(() => {
@@ -123,6 +141,8 @@ export default function GroupChat({ user }) {
       if (subscriptionRef.current) {
         subscriptionRef.current.unsubscribe()
       }
+      // Cleanup voice recording
+      cleanupVoice()
     }
   }, [user, groupId])
 
@@ -215,8 +235,25 @@ export default function GroupChat({ user }) {
     }
   }
 
-  // Format time
-  const formatTime = (timestamp) => {
+  // Send voice message
+  const sendVoiceMessage = async () => {
+    if (!chatSession?.id || !audioBlob) return
+
+    try {
+      const messageData = await uploadVoiceMessage(chatSession.id, user.id)
+      
+      if (messageData) {
+        setMessages(prev => [...prev, messageData])
+        console.log('✅ Voice message sent successfully')
+      }
+    } catch (error) {
+      console.error('❌ Error sending voice message:', error)
+      setError('Failed to send voice message')
+    }
+  }
+
+  // Format timestamp
+  const formatTimestamp = (timestamp) => {
     return new Date(timestamp).toLocaleTimeString([], { 
       hour: '2-digit', 
       minute: '2-digit' 
@@ -278,7 +315,7 @@ export default function GroupChat({ user }) {
             <div className="flex items-center space-x-2">
               <div className="text-white/60 text-sm">
                 <Clock className="h-4 w-4 inline mr-1" />
-                {group?.scheduled_start && formatTime(group.scheduled_start)} - {group?.scheduled_end && formatTime(group.scheduled_end)}
+                {group?.scheduled_start && formatTimestamp(group.scheduled_start)} - {group?.scheduled_end && formatTimestamp(group.scheduled_end)}
               </div>
             </div>
           </div>
@@ -356,27 +393,36 @@ export default function GroupChat({ user }) {
                       key={message.id}
                       className={`flex ${message.sender_id === user.id ? 'justify-end' : 'justify-start'}`}
                     >
-                      <div className="max-w-xs lg:max-w-md">
-                        {message.sender_id !== user.id && (
-                          <p className="text-white/60 text-xs mb-1 ml-2">
-                            {message.sender?.display_name}
-                          </p>
-                        )}
-                        <div
-                          className={`px-4 py-2 rounded-2xl ${
-                            message.sender_id === user.id
-                              ? 'bg-purple-500 text-white'
-                              : 'bg-white/10 text-white'
-                          }`}
-                        >
-                          <p className="text-sm">{message.content}</p>
-                          <p className={`text-xs mt-1 ${
-                            message.sender_id === user.id ? 'text-purple-100' : 'text-white/60'
-                          }`}>
-                            {formatTime(message.created_at)}
-                          </p>
+                      {message.message_type === 'voice' ? (
+                        <VoiceMessage
+                          message={message}
+                          isOwnMessage={message.sender_id === user.id}
+                          senderName={message.sender_id !== user.id ? message.sender?.display_name : ''}
+                          timestamp={formatTimestamp(message.created_at)}
+                        />
+                      ) : (
+                        <div className="max-w-xs lg:max-w-md">
+                          {message.sender_id !== user.id && (
+                            <p className="text-white/60 text-xs mb-1 ml-2">
+                              {message.sender?.display_name}
+                            </p>
+                          )}
+                          <div
+                            className={`px-4 py-2 rounded-2xl ${
+                              message.sender_id === user.id
+                                ? 'bg-purple-500 text-white'
+                                : 'bg-white/10 text-white'
+                            }`}
+                          >
+                            <p className="text-sm">{message.content}</p>
+                            <p className={`text-xs mt-1 ${
+                              message.sender_id === user.id ? 'text-purple-100' : 'text-white/60'
+                            }`}>
+                              {formatTimestamp(message.created_at)}
+                            </p>
+                          </div>
                         </div>
-                      </div>
+                      )}
                     </div>
                   ))
                 )}
@@ -385,6 +431,82 @@ export default function GroupChat({ user }) {
 
               {/* Message Input */}
               <div className="border-t border-white/10 p-4">
+                {/* Voice Recording Bar */}
+                {isRecording && (
+                  <div className="mb-3 p-3 bg-red-500/10 border border-red-500/30 rounded-xl">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-3">
+                        <div className="relative">
+                          <div className="absolute inset-0 bg-red-500 rounded-full animate-ping opacity-20"></div>
+                          <div className="relative bg-red-500 rounded-full w-8 h-8 flex items-center justify-center">
+                            <Mic className="h-4 w-4 text-white" />
+                          </div>
+                        </div>
+                        <div>
+                          <p className="text-red-400 font-medium text-sm">Recording...</p>
+                          <p className="text-red-300 text-xs">{formatTime(recordingTime)}</p>
+                        </div>
+                      </div>
+                      <div className="flex space-x-2">
+                        <button
+                          onClick={cancelRecording}
+                          className="bg-gray-600 hover:bg-gray-700 text-white px-3 py-1 rounded-lg text-sm transition-colors"
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          onClick={stopRecording}
+                          className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded-lg text-sm transition-colors"
+                        >
+                          Stop
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Voice Ready to Send Bar */}
+                {audioBlob && !isRecording && (
+                  <div className="mb-3 p-3 bg-green-500/10 border border-green-500/30 rounded-xl">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-3">
+                        <div className="bg-green-500 rounded-full w-8 h-8 flex items-center justify-center">
+                          <Mic className="h-4 w-4 text-white" />
+                        </div>
+                        <div>
+                          <p className="text-green-400 font-medium text-sm">Voice message ready</p>
+                          <p className="text-green-300 text-xs">Duration: {formatTime(recordingTime)}</p>
+                        </div>
+                      </div>
+                      <div className="flex space-x-2">
+                        <button
+                          onClick={cancelRecording}
+                          className="bg-gray-600 hover:bg-gray-700 text-white px-3 py-1 rounded-lg text-sm transition-colors"
+                        >
+                          Re-record
+                        </button>
+                        <button
+                          onClick={sendVoiceMessage}
+                          disabled={isUploading}
+                          className="bg-green-500 hover:bg-green-600 disabled:bg-green-600 text-white px-3 py-1 rounded-lg text-sm transition-colors flex items-center space-x-1"
+                        >
+                          {isUploading ? (
+                            <>
+                              <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white"></div>
+                              <span>Sending...</span>
+                            </>
+                          ) : (
+                            <>
+                              <Send className="h-3 w-3" />
+                              <span>Send</span>
+                            </>
+                          )}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
                 <div className="flex space-x-3">
                   <input
                     type="text"
@@ -398,11 +520,35 @@ export default function GroupChat({ user }) {
                     }}
                     placeholder={`Message ${group?.name}...`}
                     className="flex-1 px-4 py-2 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/60 focus:outline-none focus:border-white/40 transition-colors"
-                    disabled={sending}
+                    disabled={sending || isRecording}
                   />
                   <button
+                    onClick={isRecording ? stopRecording : (audioBlob ? sendVoiceMessage : startRecording)}
+                    disabled={sending || isUploading}
+                    className={`p-2 rounded-xl transition-colors ${
+                      isRecording 
+                        ? 'bg-red-500 hover:bg-red-600 text-white' 
+                        : audioBlob
+                        ? 'bg-green-500 hover:bg-green-600 text-white'
+                        : 'bg-green-500 hover:bg-green-600 text-white'
+                    }`}
+                    title={isRecording ? 'Stop recording' : audioBlob ? 'Send voice message' : 'Record voice message'}
+                  >
+                    {isUploading ? (
+                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                    ) : isRecording ? (
+                      <div className="animate-pulse">
+                        <Mic className="h-5 w-5" />
+                      </div>
+                    ) : audioBlob ? (
+                      <Send className="h-5 w-5" />
+                    ) : (
+                      <Mic className="h-5 w-5" />
+                    )}
+                  </button>
+                  <button
                     onClick={sendMessage}
-                    disabled={!newMessage.trim() || sending}
+                    disabled={!newMessage.trim() || sending || isRecording}
                     className="bg-purple-500 hover:bg-purple-600 disabled:bg-gray-600 text-white p-2 rounded-xl transition-colors"
                   >
                     {sending ? (
@@ -412,11 +558,20 @@ export default function GroupChat({ user }) {
                     )}
                   </button>
                 </div>
+
+                {/* Voice Error Display */}
+                {voiceError && (
+                  <div className="mt-2 p-2 bg-red-500/10 border border-red-500/30 rounded-lg">
+                    <p className="text-red-400 text-xs">{voiceError}</p>
+                  </div>
+                )}
               </div>
             </div>
           </div>
         </div>
       </div>
+
+
     </div>
   )
 } 

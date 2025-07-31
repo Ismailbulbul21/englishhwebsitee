@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
+import { useVoiceRecording } from '../lib/useVoiceRecording'
+import VoiceMessage from './VoiceMessage'
 import { 
   ArrowLeft, 
   MessageCircle, 
@@ -10,7 +12,8 @@ import {
   Heart,
   MoreHorizontal,
   X,
-  Plus
+  Plus,
+  Mic
 } from 'lucide-react'
 
 export default function RandomChat({ user }) {
@@ -28,6 +31,21 @@ export default function RandomChat({ user }) {
   
   const messagesEndRef = useRef(null)
   const subscriptionsRef = useRef(new Map())
+
+  // Voice recording hook
+  const {
+    isRecording,
+    recordingTime,
+    audioBlob,
+    isUploading,
+    error: voiceError,
+    startRecording,
+    stopRecording,
+    cancelRecording,
+    uploadVoiceMessage,
+    formatTime,
+    cleanup: cleanupVoice
+  } = useVoiceRecording()
 
   // Optimized scroll to bottom
   const scrollToBottom = useCallback(() => {
@@ -93,6 +111,9 @@ export default function RandomChat({ user }) {
         subscription.unsubscribe()
       })
       subscriptionsRef.current.clear()
+      
+      // Cleanup voice recording
+      cleanupVoice()
       
       // Cleanup debug functions
       if (typeof window !== 'undefined') {
@@ -356,6 +377,35 @@ export default function RandomChat({ user }) {
       setLoading(false)
     }
   }
+
+  // Send voice message
+  const sendVoiceMessage = async () => {
+    if (!currentChatId || !audioBlob) return
+
+    try {
+      const messageData = await uploadVoiceMessage(currentChatId, user.id)
+      
+      if (messageData) {
+        // Update the specific chat with new voice message
+        setActiveChats(prev => prev.map(chat => 
+          chat.session.id === currentChatId 
+            ? { 
+                ...chat, 
+                messages: [...chat.messages, messageData],
+                lastActivity: new Date()
+              }
+            : chat
+        ))
+
+        console.log('✅ Voice message sent successfully')
+      }
+    } catch (error) {
+      console.error('❌ Error sending voice message:', error)
+      setError('Failed to send voice message')
+    }
+  }
+
+
 
   // Send match request
   const sendMatchRequest = async (targetUserId, message = '') => {
@@ -761,23 +811,34 @@ export default function RandomChat({ user }) {
                           key={message.id}
                           className={`flex ${message.sender_id === user.id ? 'justify-end' : 'justify-start'}`}
                         >
-                          <div
-                            className={`max-w-xs px-4 py-2 rounded-2xl ${
-                              message.sender_id === user.id
-                                ? 'bg-blue-500 text-white'
-                                : 'bg-white/10 text-white'
-                            }`}
-                          >
-                            <p className="text-sm">{message.content}</p>
-                            <p className={`text-xs mt-1 ${
-                              message.sender_id === user.id ? 'text-blue-100' : 'text-white/60'
-                            }`}>
-                              {new Date(message.created_at).toLocaleTimeString([], {
+                          {message.message_type === 'voice' ? (
+                            <VoiceMessage
+                              message={message}
+                              isOwnMessage={message.sender_id === user.id}
+                              timestamp={new Date(message.created_at).toLocaleTimeString([], {
                                 hour: '2-digit',
                                 minute: '2-digit'
                               })}
-                            </p>
-                          </div>
+                            />
+                          ) : (
+                            <div
+                              className={`max-w-xs px-4 py-2 rounded-2xl ${
+                                message.sender_id === user.id
+                                  ? 'bg-blue-500 text-white'
+                                  : 'bg-white/10 text-white'
+                              }`}
+                            >
+                              <p className="text-sm">{message.content}</p>
+                              <p className={`text-xs mt-1 ${
+                                message.sender_id === user.id ? 'text-blue-100' : 'text-white/60'
+                              }`}>
+                                {new Date(message.created_at).toLocaleTimeString([], {
+                                  hour: '2-digit',
+                                  minute: '2-digit'
+                                })}
+                              </p>
+                            </div>
+                          )}
                         </div>
                       ))
                     )}
@@ -786,6 +847,82 @@ export default function RandomChat({ user }) {
 
                   {/* Message Input */}
                   <div className="border-t border-white/10 p-4">
+                    {/* Voice Recording Bar */}
+                    {isRecording && (
+                      <div className="mb-3 p-3 bg-red-500/10 border border-red-500/30 rounded-xl">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center space-x-3">
+                            <div className="relative">
+                              <div className="absolute inset-0 bg-red-500 rounded-full animate-ping opacity-20"></div>
+                              <div className="relative bg-red-500 rounded-full w-8 h-8 flex items-center justify-center">
+                                <Mic className="h-4 w-4 text-white" />
+                              </div>
+                            </div>
+                            <div>
+                              <p className="text-red-400 font-medium text-sm">Recording...</p>
+                              <p className="text-red-300 text-xs">{formatTime(recordingTime)}</p>
+                            </div>
+                          </div>
+                          <div className="flex space-x-2">
+                            <button
+                              onClick={cancelRecording}
+                              className="bg-gray-600 hover:bg-gray-700 text-white px-3 py-1 rounded-lg text-sm transition-colors"
+                            >
+                              Cancel
+                            </button>
+                            <button
+                              onClick={stopRecording}
+                              className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded-lg text-sm transition-colors"
+                            >
+                              Stop
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Voice Ready to Send Bar */}
+                    {audioBlob && !isRecording && (
+                      <div className="mb-3 p-3 bg-green-500/10 border border-green-500/30 rounded-xl">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center space-x-3">
+                            <div className="bg-green-500 rounded-full w-8 h-8 flex items-center justify-center">
+                              <Mic className="h-4 w-4 text-white" />
+                            </div>
+                            <div>
+                              <p className="text-green-400 font-medium text-sm">Voice message ready</p>
+                              <p className="text-green-300 text-xs">Duration: {formatTime(recordingTime)}</p>
+                            </div>
+                          </div>
+                          <div className="flex space-x-2">
+                            <button
+                              onClick={cancelRecording}
+                              className="bg-gray-600 hover:bg-gray-700 text-white px-3 py-1 rounded-lg text-sm transition-colors"
+                            >
+                              Re-record
+                            </button>
+                            <button
+                              onClick={sendVoiceMessage}
+                              disabled={isUploading}
+                              className="bg-green-500 hover:bg-green-600 disabled:bg-green-600 text-white px-3 py-1 rounded-lg text-sm transition-colors flex items-center space-x-1"
+                            >
+                              {isUploading ? (
+                                <>
+                                  <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white"></div>
+                                  <span>Sending...</span>
+                                </>
+                              ) : (
+                                <>
+                                  <Send className="h-3 w-3" />
+                                  <span>Send</span>
+                                </>
+                              )}
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
                     <div className="flex space-x-3">
                       <input
                         type="text"
@@ -799,11 +936,35 @@ export default function RandomChat({ user }) {
                         }}
                         placeholder={`Message ${currentChat.partner?.display_name || 'partner'}...`}
                         className="flex-1 px-4 py-2 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/60 focus:outline-none focus:border-white/40 transition-colors"
-                        disabled={loading}
+                        disabled={loading || isRecording}
                       />
                       <button
+                        onClick={isRecording ? stopRecording : (audioBlob ? sendVoiceMessage : startRecording)}
+                        disabled={loading || isUploading}
+                        className={`p-2 rounded-xl transition-colors ${
+                          isRecording 
+                            ? 'bg-red-500 hover:bg-red-600 text-white' 
+                            : audioBlob
+                            ? 'bg-green-500 hover:bg-green-600 text-white'
+                            : 'bg-green-500 hover:bg-green-600 text-white'
+                        }`}
+                        title={isRecording ? 'Stop recording' : audioBlob ? 'Send voice message' : 'Record voice message'}
+                      >
+                        {isUploading ? (
+                          <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                        ) : isRecording ? (
+                          <div className="animate-pulse">
+                            <Mic className="h-5 w-5" />
+                          </div>
+                        ) : audioBlob ? (
+                          <Send className="h-5 w-5" />
+                        ) : (
+                          <Mic className="h-5 w-5" />
+                        )}
+                      </button>
+                      <button
                         onClick={sendMessage}
-                        disabled={!newMessage.trim() || loading}
+                        disabled={!newMessage.trim() || loading || isRecording}
                         className="bg-blue-500 hover:bg-blue-600 disabled:bg-gray-600 text-white p-2 rounded-xl transition-colors"
                       >
                         {loading ? (
@@ -813,6 +974,13 @@ export default function RandomChat({ user }) {
                         )}
                       </button>
                     </div>
+
+                    {/* Voice Error Display */}
+                    {voiceError && (
+                      <div className="mt-2 p-2 bg-red-500/10 border border-red-500/30 rounded-lg">
+                        <p className="text-red-400 text-xs">{voiceError}</p>
+                      </div>
+                    )}
                   </div>
                 </div>
               ) : (
@@ -946,6 +1114,8 @@ export default function RandomChat({ user }) {
           </div>
         </div>
       )}
+
+
     </div>
   )
 } 
