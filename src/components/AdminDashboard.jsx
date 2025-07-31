@@ -290,23 +290,23 @@ export default function AdminDashboard({ user }) {
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900">
       {/* Header */}
       <header className="border-b border-white/10 backdrop-blur-sm">
-        <div className="max-w-7xl mx-auto px-6 py-4">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4">
           <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-2 sm:space-x-4">
               <Link
                 to="/"
                 className="text-white/60 hover:text-white transition-colors"
               >
                 <ArrowLeft className="h-5 w-5" />
               </Link>
-              <div className="flex items-center space-x-3">
-                <Shield className="h-6 w-6 text-purple-500" />
-                <h1 className="text-xl font-light text-white">Maamulka HadalHub</h1>
+              <div className="flex items-center space-x-2 sm:space-x-3">
+                <Shield className="h-5 w-5 sm:h-6 sm:w-6 text-purple-500" />
+                <h1 className="text-lg sm:text-xl font-light text-white">Maamulka HadalHub</h1>
               </div>
             </div>
             
-            <div className="flex items-center space-x-4">
-              <span className="text-white/60 text-sm">Welcome, {user?.display_name}</span>
+            <div className="flex items-center space-x-2 sm:space-x-4">
+              <span className="hidden sm:block text-white/60 text-sm">Welcome, {user?.display_name}</span>
               <button
                 onClick={loadAdminData}
                 className="bg-white/10 hover:bg-white/20 text-white p-2 rounded-xl transition-colors"
@@ -319,9 +319,9 @@ export default function AdminDashboard({ user }) {
         </div>
       </header>
 
-      <div className="max-w-7xl mx-auto px-6 py-6">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 sm:py-6">
         {/* Navigation Tabs */}
-        <div className="flex space-x-1 mb-6 bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-1">
+        <div className="flex flex-wrap sm:flex-nowrap gap-1 mb-6 bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-1">
           {[
             { id: 'overview', label: 'Overview', icon: BarChart3 },
             { id: 'schedules', label: 'Group Times', icon: Clock },
@@ -332,14 +332,15 @@ export default function AdminDashboard({ user }) {
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`flex items-center space-x-2 px-4 py-2 rounded-xl transition-colors ${
+              className={`flex items-center space-x-1 sm:space-x-2 px-2 sm:px-4 py-2 rounded-xl transition-colors text-sm ${
                 activeTab === tab.id
                   ? 'bg-white/10 text-white'
                   : 'text-white/60 hover:text-white hover:bg-white/5'
               }`}
             >
               <tab.icon className="h-4 w-4" />
-              <span>{tab.label}</span>
+              <span className="hidden sm:inline">{tab.label}</span>
+              <span className="sm:hidden text-xs">{tab.label.split(' ')[0]}</span>
             </button>
           ))}
         </div>
@@ -348,44 +349,44 @@ export default function AdminDashboard({ user }) {
         {activeTab === 'overview' && (
           <div className="space-y-6">
             {/* Stats Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-              <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-6">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
+              <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-4 sm:p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-white/60 text-sm">Total Users</p>
-                    <p className="text-2xl font-light text-white">{dashboardData.stats?.totalUsers || 0}</p>
+                    <p className="text-white/60 text-xs sm:text-sm">Total Users</p>
+                    <p className="text-xl sm:text-2xl font-light text-white">{dashboardData.stats?.totalUsers || 0}</p>
                   </div>
-                  <Users className="h-8 w-8 text-blue-400" />
+                  <Users className="h-6 w-6 sm:h-8 sm:w-8 text-blue-400" />
                 </div>
               </div>
               
-              <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-6">
+              <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-4 sm:p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-white/60 text-sm">Active Groups</p>
-                    <p className="text-2xl font-light text-white">{dashboardData.stats?.activeGroups || 0}</p>
+                    <p className="text-white/60 text-xs sm:text-sm">Active Groups</p>
+                    <p className="text-xl sm:text-2xl font-light text-white">{dashboardData.stats?.activeGroups || 0}</p>
                   </div>
-                  <MessageSquare className="h-8 w-8 text-green-400" />
+                  <MessageSquare className="h-6 w-6 sm:h-8 sm:w-8 text-green-400" />
                 </div>
               </div>
               
-              <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-6">
+              <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-4 sm:p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-white/60 text-sm">Debate Topics</p>
-                    <p className="text-2xl font-light text-white">{dashboardData.stats?.totalTopics || 0}</p>
+                    <p className="text-white/60 text-xs sm:text-sm">Debate Topics</p>
+                    <p className="text-xl sm:text-2xl font-light text-white">{dashboardData.stats?.totalTopics || 0}</p>
                   </div>
-                  <MessageSquare className="h-8 w-8 text-purple-400" />
+                  <MessageSquare className="h-6 w-6 sm:h-8 sm:w-8 text-purple-400" />
                 </div>
               </div>
               
-              <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-6">
+              <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-4 sm:p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-white/60 text-sm">Today's Messages</p>
-                    <p className="text-2xl font-light text-white">{dashboardData.stats?.todayMessages || 0}</p>
+                    <p className="text-white/60 text-xs sm:text-sm">Today's Messages</p>
+                    <p className="text-xl sm:text-2xl font-light text-white">{dashboardData.stats?.todayMessages || 0}</p>
                   </div>
-                  <BarChart3 className="h-8 w-8 text-orange-400" />
+                  <BarChart3 className="h-6 w-6 sm:h-8 sm:w-8 text-orange-400" />
                 </div>
               </div>
             </div>
@@ -415,20 +416,20 @@ export default function AdminDashboard({ user }) {
         {/* Group Schedules Tab */}
         {activeTab === 'schedules' && (
           <div className="space-y-6">
-            <div className="flex items-center justify-between">
-              <h2 className="text-2xl font-light text-white">Group Opening Times</h2>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <h2 className="text-xl sm:text-2xl font-light text-white">Group Opening Times</h2>
               <button
                 onClick={() => setShowScheduleModal(true)}
-                className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-xl transition-colors flex items-center space-x-2"
+                className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-xl transition-colors flex items-center justify-center space-x-2"
               >
                 <Plus className="h-4 w-4" />
                 <span>Add Schedule</span>
               </button>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
               {dashboardData.schedules?.map(schedule => (
-                <div key={schedule.id} className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-6">
+                <div key={schedule.id} className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-4 sm:p-6">
                   <div className="flex items-center justify-between mb-4">
                     <span className={`px-3 py-1 rounded-full text-sm font-medium border ${getLevelColor(schedule.level)}`}>
                       {schedule.level}
@@ -468,11 +469,11 @@ export default function AdminDashboard({ user }) {
         {/* Topics Tab */}
         {activeTab === 'topics' && (
           <div className="space-y-6">
-            <div className="flex items-center justify-between">
-              <h2 className="text-2xl font-light text-white">Debate Topics</h2>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <h2 className="text-xl sm:text-2xl font-light text-white">Debate Topics</h2>
               <button
                 onClick={() => setShowTopicModal(true)}
-                className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-xl transition-colors flex items-center space-x-2"
+                className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-xl transition-colors flex items-center justify-center space-x-2"
               >
                 <Plus className="h-4 w-4" />
                 <span>Add Topic</span>
@@ -525,9 +526,10 @@ export default function AdminDashboard({ user }) {
         {/* Users Tab */}
         {activeTab === 'users' && (
           <div className="space-y-6">
-            <h2 className="text-2xl font-light text-white">User Management</h2>
+            <h2 className="text-xl sm:text-2xl font-light text-white">User Management</h2>
             
-            <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl overflow-hidden">
+            {/* Desktop Table View */}
+            <div className="hidden lg:block bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl overflow-hidden">
               <div className="overflow-x-auto">
                 <table className="w-full">
                   <thead className="bg-white/5">
@@ -607,16 +609,89 @@ export default function AdminDashboard({ user }) {
                 </table>
               </div>
             </div>
+
+            {/* Mobile Card View */}
+            <div className="lg:hidden space-y-4">
+              {dashboardData.users?.map(userItem => (
+                <div key={userItem.id} className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-4">
+                  <div className="flex flex-col space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-white font-medium">{userItem.display_name}</p>
+                        <p className="text-white/60 text-sm">{userItem.email}</p>
+                      </div>
+                      <div className="flex space-x-2">
+                        {userItem.status === 'active' && (
+                          <>
+                            <button
+                              onClick={() => updateUserStatus(userItem.id, 'suspended')}
+                              className="text-yellow-400 hover:text-yellow-300 p-1 rounded transition-colors"
+                              title="Suspend User"
+                            >
+                              <AlertTriangle className="h-4 w-4" />
+                            </button>
+                            <button
+                              onClick={() => updateUserStatus(userItem.id, 'banned')}
+                              className="text-red-400 hover:text-red-300 p-1 rounded transition-colors"
+                              title="Ban User"
+                            >
+                              <XCircle className="h-4 w-4" />
+                            </button>
+                          </>
+                        )}
+                        {userItem.status !== 'active' && (
+                          <button
+                            onClick={() => updateUserStatus(userItem.id, 'active')}
+                            className="text-green-400 hover:text-green-300 p-1 rounded transition-colors"
+                            title="Activate User"
+                          >
+                            <CheckCircle className="h-4 w-4" />
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                    
+                    <div className="grid grid-cols-2 gap-4 text-sm">
+                      <div>
+                        <p className="text-white/60">Level</p>
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium border ${getLevelColor(userItem.english_level)}`}>
+                          {userItem.english_level}
+                        </span>
+                      </div>
+                      <div>
+                        <p className="text-white/60">Status</p>
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium border ${getStatusColor(userItem.status)}`}>
+                          {userItem.status}
+                        </span>
+                      </div>
+                      <div>
+                        <p className="text-white/60">Progress</p>
+                        <div className="text-white">
+                          <p>{userItem.total_lessons_completed} lessons</p>
+                          <p className="text-white/60">{userItem.total_quizzes_passed} quizzes</p>
+                        </div>
+                      </div>
+                      <div>
+                        <p className="text-white/60">Last Active</p>
+                        <p className="text-white">
+                          {userItem.last_activity ? new Date(userItem.last_activity).toLocaleDateString() : 'Never'}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         )}
 
         {/* Settings Tab */}
         {activeTab === 'settings' && (
           <div className="space-y-6">
-            <h2 className="text-2xl font-light text-white">Platform Settings</h2>
+            <h2 className="text-xl sm:text-2xl font-light text-white">Platform Settings</h2>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+              <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-4 sm:p-6">
                 <h3 className="text-white font-medium mb-4">Group Settings</h3>
                 <div className="space-y-4">
                   <div>
@@ -649,7 +724,7 @@ export default function AdminDashboard({ user }) {
                 </div>
               </div>
 
-              <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-6">
+              <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-4 sm:p-6">
                 <h3 className="text-white font-medium mb-4">Platform Status</h3>
                 <div className="space-y-4">
                   <div>
@@ -672,7 +747,7 @@ export default function AdminDashboard({ user }) {
       {/* Schedule Modal */}
       {showScheduleModal && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-gray-800 rounded-2xl p-6 w-full max-w-md border border-gray-700">
+          <div className="bg-gray-800 rounded-2xl p-4 sm:p-6 w-full max-w-md border border-gray-700 mx-4">
             <h3 className="text-xl font-bold text-white mb-4">
               {editingSchedule ? 'Edit Schedule' : 'Add Schedule'}
             </h3>
@@ -758,7 +833,7 @@ export default function AdminDashboard({ user }) {
       {/* Topic Modal */}
       {showTopicModal && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-gray-800 rounded-2xl p-6 w-full max-w-md border border-gray-700">
+          <div className="bg-gray-800 rounded-2xl p-4 sm:p-6 w-full max-w-md border border-gray-700 mx-4">
             <h3 className="text-xl font-bold text-white mb-4">
               {editingTopic ? 'Edit Topic' : 'Add Topic'}
             </h3>
