@@ -18,6 +18,7 @@ export default function Quiz({ user }) {
   const [selectedAnswer, setSelectedAnswer] = useState(null)
   const [userAnswers, setUserAnswers] = useState([])
   const [showResult, setShowResult] = useState(false)
+  const [showDetailedResults, setShowDetailedResults] = useState(false)
   const [score, setScore] = useState(0)
   const [quizStatus, setQuizStatus] = useState('not_started') // not_started, in_progress, completed
   const [attempts, setAttempts] = useState([])
@@ -98,7 +99,8 @@ export default function Quiz({ user }) {
     setUserAnswers([])
     setSelectedAnswer(null)
     setShowResult(false)
-    setTimeLeft(quiz.questions.length * 60) // 1 minute per question
+    setShowDetailedResults(false)
+    setTimeLeft(quiz.questions.length * 120) // 2 minutes per question for less pressure
   }
 
   const selectAnswer = (answerIndex) => {
@@ -154,7 +156,7 @@ export default function Quiz({ user }) {
             answers: answers,
             status: status,
             attempt_number: attemptNumber,
-            time_taken: (quiz.questions.length * 60) - (timeLeft || 0)
+            time_taken: (quiz.questions.length * 120) - (timeLeft || 0)
           }
         ])
 
@@ -424,7 +426,7 @@ export default function Quiz({ user }) {
           </div>
         )}
 
-        {showResult && (
+        {showResult && !showDetailedResults && (
           <div className="bg-gray-800 rounded-xl p-8 border border-gray-700">
             <div className="text-center mb-8">
               {score >= (quiz.passing_score || 80) ? (
@@ -463,7 +465,95 @@ export default function Quiz({ user }) {
               </div>
             </div>
 
+            <div className="flex justify-center space-x-4 mb-6">
+              <button
+                onClick={() => setShowDetailedResults(true)}
+                className="px-6 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors"
+              >
+                <span className="text-white">Review Answers</span>
+              </button>
+            </div>
+
             <div className="flex justify-center space-x-4">
+              <Link
+                to="/"
+                className="px-6 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors"
+              >
+                <span className="text-white">Back to Dashboard</span>
+              </Link>
+              
+              {attemptsLeft > 1 && score < (quiz.passing_score || 80) && (
+                <button
+                  onClick={retakeQuiz}
+                  className="flex items-center space-x-2 px-6 py-2 bg-yellow-600 hover:bg-yellow-700 rounded-lg transition-colors"
+                >
+                  <RotateCcw className="h-4 w-4" />
+                  <span className="text-white">Retake Quiz</span>
+                </button>
+              )}
+            </div>
+          </div>
+        )}
+
+        {showDetailedResults && (
+          <div className="bg-gray-800 rounded-xl p-8 border border-gray-700">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-2xl font-bold text-white">Detailed Results</h2>
+              <button
+                onClick={() => setShowDetailedResults(false)}
+                className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors text-white"
+              >
+                Back to Summary
+              </button>
+            </div>
+
+            <div className="space-y-6">
+              {quiz.questions.map((question, index) => {
+                const userAnswer = userAnswers[index]
+                const isCorrect = userAnswer === question.correct
+                const userAnswerText = userAnswer !== undefined ? question.options[userAnswer] : 'Not answered'
+                const correctAnswerText = question.options[question.correct]
+
+                return (
+                  <div key={index} className={`p-6 rounded-lg border-2 ${
+                    isCorrect ? 'border-green-500 bg-green-500/10' : 'border-red-500 bg-red-500/10'
+                  }`}>
+                    <div className="flex items-start justify-between mb-4">
+                      <h3 className="text-lg font-semibold text-white flex-1">
+                        {index + 1}. {question.question}
+                      </h3>
+                      {isCorrect ? (
+                        <CheckCircle className="h-6 w-6 text-green-400 ml-4" />
+                      ) : (
+                        <XCircle className="h-6 w-6 text-red-400 ml-4" />
+                      )}
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                      <div>
+                        <p className="text-sm text-gray-400 mb-1">Your Answer:</p>
+                        <p className={`font-medium ${isCorrect ? 'text-green-400' : 'text-red-400'}`}>
+                          {userAnswerText}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-400 mb-1">Correct Answer:</p>
+                        <p className="font-medium text-green-400">
+                          {correctAnswerText}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="bg-gray-700 p-4 rounded-lg">
+                      <p className="text-sm text-gray-400 mb-1">Explanation:</p>
+                      <p className="text-gray-300">{question.explanation}</p>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+
+            <div className="flex justify-center space-x-4 mt-8">
               <Link
                 to="/"
                 className="px-6 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors"
