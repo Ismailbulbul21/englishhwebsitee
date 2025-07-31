@@ -29,6 +29,7 @@ export default function RandomChat({ user }) {
   const [selectedUser, setSelectedUser] = useState(null)
   const [requestMessage, setRequestMessage] = useState('')
   const [realtimeStatus, setRealtimeStatus] = useState('connecting') // 'connecting', 'connected', 'disconnected'
+  const [showRealtimeNotification, setShowRealtimeNotification] = useState(false)
   
   const messagesEndRef = useRef(null)
   const subscriptionsRef = useRef(new Map())
@@ -47,6 +48,17 @@ export default function RandomChat({ user }) {
     formatTime,
     cleanup: cleanupVoice
   } = useVoiceRecording()
+
+  // Show notification when real-time connects
+  useEffect(() => {
+    if (realtimeStatus === 'connected' && !showRealtimeNotification) {
+      setShowRealtimeNotification(true)
+      // Auto-hide after 3 seconds
+      setTimeout(() => {
+        setShowRealtimeNotification(false)
+      }, 3000)
+    }
+  }, [realtimeStatus, showRealtimeNotification])
 
   // Optimized scroll to bottom
   const scrollToBottom = useCallback(() => {
@@ -110,18 +122,61 @@ export default function RandomChat({ user }) {
         console.log('🧪 Testing real-time connection...')
         console.log('- Real-time Status:', realtimeStatus)
         console.log('- Active Subscriptions:', subscriptionsRef.current.size)
-        console.log('- Supabase Channel Status:', supabase.channel('test').state)
+        console.log('- Current Chat ID:', currentChatId)
         
-        // Test subscription
-        const testChannel = supabase.channel('test-channel')
-        testChannel.subscribe((status) => {
-          console.log('🧪 Test channel status:', status)
-        })
+        // Test basic connectivity
+        const testChannel = supabase.channel('test-channel-' + Date.now())
+        testChannel
+          .on('broadcast', { event: 'test' }, (payload) => {
+            console.log('✅ Real-time test successful:', payload)
+          })
+          .subscribe((status) => {
+            console.log('🧪 Test channel status:', status)
+            if (status === 'SUBSCRIBED') {
+              // Send test broadcast
+              testChannel.send({
+                type: 'broadcast',
+                event: 'test',
+                payload: { message: 'Real-time is working!', timestamp: new Date() }
+              })
+              
+              // Clean up after 3 seconds
+              setTimeout(() => {
+                testChannel.unsubscribe()
+                console.log('🧪 Test channel cleaned up')
+              }, 3000)
+            }
+          })
+      }
+      
+      window.sendTestMessage = async () => {
+        if (!currentChatId) {
+          console.log('❌ No active chat to test with')
+          return
+        }
         
-        setTimeout(() => {
-          testChannel.unsubscribe()
-          console.log('🧪 Test channel unsubscribed')
-        }, 3000)
+        console.log('🧪 Sending test message to chat:', currentChatId)
+        
+        try {
+          const { data, error } = await supabase
+            .from('messages')
+            .insert({
+              chat_session_id: currentChatId,
+              sender_id: user.id,
+              content: `🧪 Test message sent at ${new Date().toLocaleTimeString()}`,
+              message_type: 'text'
+            })
+            .select(`
+              *,
+              sender:users(display_name, english_level)
+            `)
+            .single()
+
+          if (error) throw error
+          console.log('✅ Test message sent successfully:', data)
+        } catch (error) {
+          console.error('❌ Test message failed:', error)
+        }
       }
     }
     
@@ -141,6 +196,7 @@ export default function RandomChat({ user }) {
         delete window.refreshChats
         delete window.testChatFunction
         delete window.testRealtimeConnection
+        delete window.sendTestMessage
       }
     }
   }, [user])
@@ -689,6 +745,16 @@ export default function RandomChat({ user }) {
       </header>
 
       <div className="max-w-6xl mx-auto px-6 py-6">
+        {/* Real-time Connection Notification */}
+        {showRealtimeNotification && (
+          <div className="fixed top-4 right-4 z-50 bg-green-500 text-white px-4 py-2 rounded-xl shadow-lg animate-slide-in-right">
+            <div className="flex items-center space-x-2">
+              <div className="w-2 h-2 bg-white rounded-full animate-pulse"></div>
+              <span className="text-sm font-medium">Real-time messaging active!</span>
+            </div>
+          </div>
+        )}
+
         {error && (
           <div className="mb-4 p-4 bg-red-500/10 border border-red-500/30 rounded-xl">
             <div className="flex items-center justify-between">

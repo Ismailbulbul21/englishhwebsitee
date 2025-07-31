@@ -2,18 +2,35 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Custom animations */
-@keyframes fadeIn {
+/* Custom animations for real-time notifications */
+@keyframes slide-in-right {
   from {
+    transform: translateX(100%);
     opacity: 0;
-    transform: translateY(10px);
   }
   to {
+    transform: translateX(0);
     opacity: 1;
-    transform: translateY(0);
   }
 }
 
-.animate-fadeIn {
-  animation: fadeIn 0.5s ease-out;
+.animate-slide-in-right {
+  animation: slide-in-right 0.3s ease-out;
 }
+
+:root {
+  font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+
+  color-scheme: dark light;
+  color: rgba(255, 255, 255, 0.87);
+  background-color: #242424;
+
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+

@@ -28,9 +28,17 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     schema: 'public'
   },
   realtime: {
-    // Optimize real-time connections
+    // Optimize real-time connections for better performance
     params: {
-      eventsPerSecond: 10
+      eventsPerSecond: 20, // Increased from 10 for better real-time performance
+    },
+    // Add heartbeat for connection stability
+    heartbeatIntervalMs: 30000,
+    // Timeout settings
+    timeout: 20000,
+    // Reconnection settings
+    reconnectAfterMs: function (tries) {
+      return Math.min(tries * 1000, 30000) // Exponential backoff, max 30s
     }
   },
   global: {
