@@ -199,7 +199,7 @@ export default function Dashboard({ user }) {
                 <ArrowRight className="h-5 w-5 text-white/30 group-hover:text-white/60 group-hover:translate-x-1 transition-all" />
               </div>
             </div>
-            <h3 className="text-xl font-medium text-white mb-2">Ku celceli</h3>
+            <h3 className="text-xl font-medium text-white mb-2">lamaane</h3>
             <p className="text-white/60 text-sm">
               La sheekayso asxaabta
             </p>

@@ -733,9 +733,18 @@ export default function RandomChat({ user }) {
                             </div>
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center justify-between">
-                                <p className="text-white font-medium text-sm truncate">
-                                  {chat.partner?.display_name || 'Unknown User'}
-                                </p>
+                                <div className="flex items-center space-x-1 flex-1 min-w-0">
+                                  <p className="text-white font-medium text-sm truncate">
+                                    {chat.partner?.display_name || 'Unknown User'}
+                                  </p>
+                                  {chat.partner?.gender && (
+                                    <span className={`text-xs ${
+                                      chat.partner.gender === 'male' ? 'text-blue-400' : 'text-pink-400'
+                                    }`}>
+                                      {chat.partner.gender === 'male' ? '♂' : '♀'}
+                                    </span>
+                                  )}
+                                </div>
                                 {unreadCount > 0 && (
                                   <div className="bg-red-500 text-white text-xs rounded-full px-2 py-1 min-w-[20px] text-center">
                                     {unreadCount}
@@ -777,9 +786,20 @@ export default function RandomChat({ user }) {
                           </span>
                         </div>
                         <div>
-                          <p className="text-white font-medium">
-                            {currentChat.partner?.display_name || 'Unknown User'}
-                          </p>
+                          <div className="flex items-center space-x-2">
+                            <p className="text-white font-medium">
+                              {currentChat.partner?.display_name || 'Unknown User'}
+                            </p>
+                            {currentChat.partner?.gender && (
+                              <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                                currentChat.partner.gender === 'male' 
+                                  ? 'bg-blue-500/20 text-blue-400' 
+                                  : 'bg-pink-500/20 text-pink-400'
+                              }`}>
+                                {currentChat.partner.gender === 'male' ? '♂' : '♀'}
+                              </span>
+                            )}
+                          </div>
                           <p className="text-white/60 text-sm">
                             {currentChat.partner?.english_level} level • Online
                           </p>
@@ -1037,8 +1057,17 @@ export default function RandomChat({ user }) {
                         {selectedUser.display_name.charAt(0).toUpperCase()}
                       </span>
                     </div>
-                    <div>
-                      <p className="text-white font-medium">{selectedUser.display_name}</p>
+                    <div className="flex-1">
+                      <div className="flex items-center justify-between">
+                        <p className="text-white font-medium">{selectedUser.display_name}</p>
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                          selectedUser.gender === 'male' 
+                            ? 'bg-blue-500/20 text-blue-400' 
+                            : 'bg-pink-500/20 text-pink-400'
+                        }`}>
+                          {selectedUser.gender === 'male' ? '♂ Male' : '♀ Female'}
+                        </span>
+                      </div>
                       <p className="text-white/60 text-sm">{selectedUser.english_level} level</p>
                     </div>
                   </div>
@@ -1089,8 +1118,19 @@ export default function RandomChat({ user }) {
                               {availableUser.display_name.charAt(0).toUpperCase()}
                             </span>
                           </div>
-                          <div>
-                            <p className="text-white font-medium">{availableUser.display_name}</p>
+                          <div className="flex-1">
+                            <div className="flex items-center justify-between">
+                              <p className="text-white font-medium">{availableUser.display_name}</p>
+                              <div className="flex items-center space-x-2">
+                                <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                                  availableUser.gender === 'male' 
+                                    ? 'bg-blue-500/20 text-blue-400' 
+                                    : 'bg-pink-500/20 text-pink-400'
+                                }`}>
+                                  {availableUser.gender === 'male' ? '♂ Male' : '♀ Female'}
+                                </span>
+                              </div>
+                            </div>
                             <p className="text-white/60 text-sm">{availableUser.english_level} level</p>
                           </div>
                         </div>
