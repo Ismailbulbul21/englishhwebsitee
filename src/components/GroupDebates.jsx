@@ -2,16 +2,17 @@ import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { 
-  ArrowLeft, 
   Users, 
   Plus, 
   Clock, 
-  MessageCircle,
-  Eye,
-  CheckCircle,
+  MessageCircle, 
+  ArrowLeft,
   AlertCircle,
   Calendar,
-  Hash
+  Hash,
+  Shield,
+  CheckCircle,
+  Eye
 } from 'lucide-react'
 
 export default function GroupDebates({ user }) {
@@ -24,28 +25,118 @@ export default function GroupDebates({ user }) {
   const [loading, setLoading] = useState(true)
   const [creating, setCreating] = useState(false)
   const [currentSchedule, setCurrentSchedule] = useState(null)
+  const [timeUntilDebate, setTimeUntilDebate] = useState(null)
+  const [isDebateTime, setIsDebateTime] = useState(false)
+  const [currentTime, setCurrentTime] = useState(new Date())
+  const [isAdmin, setIsAdmin] = useState(false)
+  const [adminCheckLoading, setAdminCheckLoading] = useState(true)
+  const [selectedLevel, setSelectedLevel] = useState('beginner')
 
   useEffect(() => {
     if (user) {
       fetchGroups()
       fetchDebateTopics()
       fetchCurrentSchedule()
+      checkAdminStatus()
     }
   }, [user])
 
+  const checkAdminStatus = async () => {
+    try {
+      setAdminCheckLoading(true)
+      const { data, error } = await supabase.rpc('check_admin_access', {
+        user_id_param: user.id
+      })
+      
+      if (error) {
+        console.error('Error checking admin status:', error)
+        setIsAdmin(false)
+      } else {
+        setIsAdmin(data || false)
+        console.log('🔐 Admin check result:', data ? `✅ Admin user (${user.display_name})` : `❌ Regular user (${user.display_name})`)
+      }
+    } catch (error) {
+      console.error('Error checking admin status:', error)
+      setIsAdmin(false)
+    } finally {
+      setAdminCheckLoading(false)
+    }
+  }
+
+  // Timer effect to update countdown every second
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentTime(new Date())
+      if (currentSchedule) {
+        calculateTimeUntilDebate()
+      }
+    }, 1000)
+
+    return () => clearInterval(timer)
+  }, [currentSchedule])
+
+  const calculateTimeUntilDebate = () => {
+    if (!currentSchedule) return
+
+    const now = new Date()
+    const [startHours, startMinutes] = currentSchedule.start_time.split(':').map(Number)
+    const [endHours, endMinutes] = currentSchedule.end_time.split(':').map(Number)
+
+    // Create today's start and end times
+    const todayStart = new Date()
+    todayStart.setHours(startHours, startMinutes, 0, 0)
+    
+    const todayEnd = new Date()
+    todayEnd.setHours(endHours, endMinutes, 0, 0)
+
+    // If end time is before start time, it means it goes to next day
+    if (todayEnd < todayStart) {
+      todayEnd.setDate(todayEnd.getDate() + 1)
+    }
+
+    // Check if we're currently in debate time
+    if (now >= todayStart && now <= todayEnd) {
+      setIsDebateTime(true)
+      setTimeUntilDebate(null)
+      return
+    }
+
+    // Calculate time until next debate session
+    let nextDebateStart = new Date(todayStart)
+    
+    // If we're past today's debate time, schedule for tomorrow
+    if (now > todayEnd) {
+      nextDebateStart.setDate(nextDebateStart.getDate() + 1)
+    }
+
+    const timeDiff = nextDebateStart - now
+    const hours = Math.floor(timeDiff / (1000 * 60 * 60))
+    const minutes = Math.floor((timeDiff % (1000 * 60 * 60)) / (1000 * 60))
+    const seconds = Math.floor((timeDiff % (1000 * 60)) / 1000)
+
+    setIsDebateTime(false)
+    setTimeUntilDebate({ hours, minutes, seconds })
+  }
+
   const fetchGroups = async () => {
     try {
-      const { data, error } = await supabase
+      let query = supabase
         .from('groups')
         .select(`
           *,
           topic:debate_topics(title, description),
           host:users(display_name)
         `)
-        .eq('level', user.english_level)
         .in('status', ['waiting', 'active'])
         .gte('scheduled_end', new Date().toISOString())
         .order('created_at', { ascending: false })
+
+      // If user is admin, show groups for all levels, otherwise only their level
+      if (!isAdmin) {
+        query = query.eq('level', user.english_level)
+      }
+
+      const { data, error } = await query
 
       if (error) throw error
       setGroups(data || [])
@@ -59,7 +150,7 @@ export default function GroupDebates({ user }) {
       const { data, error } = await supabase
         .from('debate_topics')
         .select('*')
-        .eq('level', user.english_level)
+        .eq('level', selectedLevel)
         .eq('is_active', true)
         .order('usage_count', { ascending: true })
 
@@ -72,6 +163,20 @@ export default function GroupDebates({ user }) {
     }
   }
 
+  // Refetch topics when selected level changes
+  useEffect(() => {
+    if (isAdmin && selectedLevel) {
+      fetchDebateTopics()
+    }
+  }, [selectedLevel, isAdmin])
+
+  // Refetch groups when admin status changes
+  useEffect(() => {
+    if (user && !adminCheckLoading) {
+      fetchGroups()
+    }
+  }, [isAdmin, adminCheckLoading])
+
   const fetchCurrentSchedule = async () => {
     try {
       const { data, error } = await supabase
@@ -79,6 +184,11 @@ export default function GroupDebates({ user }) {
 
       if (error) throw error
       setCurrentSchedule(data)
+      
+      // Calculate initial countdown
+      if (data) {
+        setTimeout(() => calculateTimeUntilDebate(), 100)
+      }
     } catch (error) {
       console.error('Error fetching schedule:', error)
       // Fallback to default times if database fails
@@ -94,12 +204,13 @@ export default function GroupDebates({ user }) {
 
     setCreating(true)
     try {
+      // Use admin-specific function that bypasses restrictions
       const { data, error } = await supabase
-        .rpc('create_debate_group', {
+        .rpc('admin_create_debate_group', {
           group_name_param: groupName.trim(),
-          level_param: user.english_level,
+          level_param: selectedLevel,
           topic_id_param: selectedTopic.id,
-          host_id_param: user.id
+          admin_id_param: user.id
         })
 
       if (error) throw error
@@ -109,6 +220,7 @@ export default function GroupDebates({ user }) {
         setSelectedTopic(null)
         setGroupName('')
         fetchGroups()
+        alert(`${selectedLevel.charAt(0).toUpperCase() + selectedLevel.slice(1)} group created successfully!`)
       } else {
         alert(data.error)
       }
@@ -209,7 +321,7 @@ export default function GroupDebates({ user }) {
   }
 
   const canCreateGroup = () => {
-    return (user?.groups_created_today || 0) < 1
+    return isAdmin && !adminCheckLoading
   }
 
   if (loading) {
@@ -244,13 +356,33 @@ export default function GroupDebates({ user }) {
                 <Clock className="h-4 w-4" />
                 <span className="text-sm">{getScheduleDisplay()}</span>
               </div>
+              
+              {/* Countdown or Status Display */}
+              {!isDebateTime && timeUntilDebate && (
+                <div className="flex items-center space-x-2 px-3 py-1 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
+                  <Clock className="h-4 w-4 text-yellow-400" />
+                  <span className="text-sm text-yellow-400">
+                    Opens in: {timeUntilDebate.hours}h {timeUntilDebate.minutes}m {timeUntilDebate.seconds}s
+                  </span>
+                </div>
+              )}
+              
+              {isDebateTime && (
+                <div className="flex items-center space-x-2 px-3 py-1 bg-green-500/10 border border-green-500/30 rounded-lg">
+                  <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+                  <span className="text-sm text-green-400">Debates are OPEN!</span>
+                </div>
+              )}
+              
               <button
                 onClick={() => setShowCreateModal(true)}
                 disabled={!canCreateGroup()}
                 className="flex items-center justify-center space-x-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 disabled:bg-gray-600 disabled:cursor-not-allowed rounded-lg transition-colors"
               >
                 <Plus className="h-4 w-4" />
-                <span className="text-white text-sm">Create Group</span>
+                <span className="text-white text-sm">
+                  {isAdmin ? 'Create Group (Admin)' : 'Admin Only'}
+                </span>
               </button>
             </div>
           </div>
@@ -389,17 +521,66 @@ export default function GroupDebates({ user }) {
         ) : (
           <div className="text-center py-12">
             <Users className="h-16 w-16 text-gray-600 mx-auto mb-4" />
-            <h3 className="text-xl font-semibold text-white mb-2">No Active Groups</h3>
-            <p className="text-gray-400 mb-6">
-              Be the first to create a debate group for tonight!
-            </p>
-            <button
-              onClick={() => setShowCreateModal(true)}
-              disabled={!canCreateGroup()}
-              className="px-6 py-3 bg-purple-600 hover:bg-purple-700 disabled:bg-gray-600 disabled:cursor-not-allowed rounded-lg transition-colors"
-            >
-              <span className="text-white font-medium">Create First Group</span>
-            </button>
+            {isDebateTime ? (
+              <>
+                <h3 className="text-xl font-semibold text-white mb-2">No Active Groups</h3>
+                {isAdmin ? (
+                  <>
+                    <p className="text-gray-400 mb-6">
+                      Create the first debate group for tonight as an admin!
+                    </p>
+                    <button
+                      onClick={() => setShowCreateModal(true)}
+                      disabled={!canCreateGroup()}
+                      className="px-6 py-3 bg-purple-600 hover:bg-purple-700 disabled:bg-gray-600 disabled:cursor-not-allowed rounded-lg transition-colors"
+                    >
+                      <span className="text-white font-medium">Create First Group (Admin)</span>
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <p className="text-gray-400 mb-4">
+                      No debate groups have been created yet.
+                    </p>
+                    <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-4 max-w-md mx-auto">
+                      <div className="flex items-center justify-center space-x-2 mb-2">
+                        <Shield className="h-5 w-5 text-blue-400" />
+                        <span className="text-blue-400 font-medium">Admin Access Required</span>
+                      </div>
+                      <p className="text-gray-300 text-sm">
+                        Only administrators can create debate groups. Wait for an admin to create groups you can join.
+                      </p>
+                    </div>
+                  </>
+                )}
+              </>
+            ) : (
+              <>
+                <h3 className="text-xl font-semibold text-white mb-2">Debates Are Closed</h3>
+                <p className="text-gray-400 mb-4">
+                  Group debates for {user?.english_level} level are currently closed.
+                </p>
+                {timeUntilDebate && (
+                  <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-4 mb-6 max-w-md mx-auto">
+                    <div className="flex items-center justify-center space-x-2 mb-2">
+                      <Clock className="h-5 w-5 text-yellow-400" />
+                      <span className="text-yellow-400 font-medium">Next Session Opens In:</span>
+                    </div>
+                    <div className="text-2xl font-bold text-white">
+                      {timeUntilDebate.hours.toString().padStart(2, '0')}:
+                      {timeUntilDebate.minutes.toString().padStart(2, '0')}:
+                      {timeUntilDebate.seconds.toString().padStart(2, '0')}
+                    </div>
+                    <div className="text-sm text-gray-400 mt-2">
+                      Scheduled: {getScheduleDisplay()}
+                    </div>
+                  </div>
+                )}
+                <p className="text-gray-500 text-sm">
+                  Come back during scheduled hours to join or create debate groups!
+                </p>
+              </>
+            )}
           </div>
         )}
 
@@ -410,6 +591,25 @@ export default function GroupDebates({ user }) {
               <h3 className="text-xl font-bold text-white mb-4">Create Debate Group</h3>
               
               <div className="space-y-4">
+                {/* Level Selector for Admins */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                    English Level
+                  </label>
+                  <select
+                    value={selectedLevel}
+                    onChange={(e) => setSelectedLevel(e.target.value)}
+                    className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-600 focus:border-transparent"
+                  >
+                    <option value="beginner">Beginner</option>
+                    <option value="intermediate">Intermediate</option>
+                    <option value="advanced">Advanced</option>
+                  </select>
+                  <p className="text-xs text-gray-400 mt-1">
+                    Create groups for any level as admin
+                  </p>
+                </div>
+
                 <div>
                   <label className="block text-sm font-medium text-gray-300 mb-2">
                     Group Name
@@ -480,9 +680,20 @@ export default function GroupDebates({ user }) {
 
               {!canCreateGroup() && (
                 <div className="mt-4 p-3 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
-                  <p className="text-yellow-400 text-sm">
-                    You can only create 1 group per day. Limit resets at midnight.
-                  </p>
+                  {!isAdmin ? (
+                    <div>
+                      <p className="text-yellow-400 text-sm font-medium mb-1">
+                        Admin Access Required
+                      </p>
+                      <p className="text-yellow-300 text-xs">
+                        Only administrators can create debate groups. Contact an admin if you need a group created.
+                      </p>
+                    </div>
+                  ) : adminCheckLoading ? (
+                    <p className="text-yellow-400 text-sm">
+                      Checking admin permissions...
+                    </p>
+                  ) : null}
                 </div>
               )}
             </div>
