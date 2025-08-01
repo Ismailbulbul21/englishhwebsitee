@@ -158,10 +158,10 @@ export default function Dashboard({ user }) {
         {/* Welcome Section */}
         <div className="text-center mb-12">
           <h1 className="text-3xl font-light text-white mb-3">
-            Soo dhawoow
+            Welcome back
           </h1>
           <p className="text-white/60">
-            Sii wad safarkaaga Ingiriisiga
+            Continue your English journey
           </p>
         </div>
 
@@ -179,9 +179,9 @@ export default function Dashboard({ user }) {
               </div>
               <ArrowRight className="h-5 w-5 text-white/30 group-hover:text-white/60 group-hover:translate-x-1 transition-all" />
             </div>
-            <h3 className="text-xl font-medium text-white mb-2">Baro</h3>
+            <h3 className="text-xl font-medium text-white mb-2">Learn</h3>
             <p className="text-white/60 text-sm">
-              Naxwaha, erayada & weedhaha
+              Grammar, vocabulary & phrases
             </p>
           </Link>
 
@@ -199,9 +199,9 @@ export default function Dashboard({ user }) {
                 <ArrowRight className="h-5 w-5 text-white/30 group-hover:text-white/60 group-hover:translate-x-1 transition-all" />
               </div>
             </div>
-            <h3 className="text-xl font-medium text-white mb-2">lamaane</h3>
+            <h3 className="text-xl font-medium text-white mb-2">Chat</h3>
             <p className="text-white/60 text-sm">
-              La sheekayso asxaabta
+              Practice with partners
             </p>
           </Link>
 
@@ -216,9 +216,9 @@ export default function Dashboard({ user }) {
               </div>
               <ArrowRight className="h-5 w-5 text-white/30 group-hover:text-white/60 group-hover:translate-x-1 transition-all" />
             </div>
-            <h3 className="text-xl font-medium text-white mb-2">Imtixaan</h3>
+            <h3 className="text-xl font-medium text-white mb-2">Quiz</h3>
             <p className="text-white/60 text-sm">
-              Tijaabi aqoontaada
+              Test your knowledge
             </p>
           </Link>
 
@@ -237,9 +237,9 @@ export default function Dashboard({ user }) {
                 <ArrowRight className="h-5 w-5 text-white/30 group-hover:text-white/60 group-hover:translate-x-1 transition-all" />
               </div>
             </div>
-            <h3 className="text-xl font-medium text-white mb-2">Dood</h3>
+            <h3 className="text-xl font-medium text-white mb-2">Debates</h3>
             <p className="text-white/60 text-sm">
-              Wadahadalka kooxda
+              Group discussions
             </p>
           </Link>
 
@@ -253,21 +253,21 @@ export default function Dashboard({ user }) {
                 <Flame className="h-5 w-5 text-orange-400 mr-2" />
                 <span className="text-2xl font-light text-white">{stats?.current_streak || 0}</span>
               </div>
-              <p className="text-white/50 text-xs">Maalmaha joogtada ah</p>
+              <p className="text-white/50 text-xs">Day streak</p>
             </div>
             <div>
               <div className="flex items-center justify-center mb-2">
                 <BookOpen className="h-5 w-5 text-blue-400 mr-2" />
                 <span className="text-2xl font-light text-white">{stats?.total_lessons_completed || 0}</span>
               </div>
-              <p className="text-white/50 text-xs">Casharrada</p>
+              <p className="text-white/50 text-xs">Lessons</p>
             </div>
             <div>
               <div className="flex items-center justify-center mb-2">
                 <Trophy className="h-5 w-5 text-yellow-400 mr-2" />
                 <span className="text-2xl font-light text-white">{stats?.total_quizzes_passed || 0}</span>
               </div>
-              <p className="text-white/50 text-xs">Imtixaannada</p>
+              <p className="text-white/50 text-xs">Quizzes</p>
             </div>
           </div>
         </div>
@@ -278,7 +278,7 @@ export default function Dashboard({ user }) {
             to="/progress"
             className="inline-flex items-center space-x-2 text-white/60 hover:text-white/80 transition-colors text-sm"
           >
-            <span>Eeg horumarka faahfaahsan</span>
+            <span>View detailed progress</span>
             <ArrowRight className="h-4 w-4" />
           </Link>
         </div>
