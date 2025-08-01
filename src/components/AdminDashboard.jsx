@@ -16,7 +16,10 @@ import {
   XCircle,
   AlertTriangle,
   Save,
-  RefreshCw
+  RefreshCw,
+  Timer,
+  StopCircle,
+  Activity
 } from 'lucide-react'
 
 export default function AdminDashboard({ user }) {
@@ -35,18 +38,21 @@ export default function AdminDashboard({ user }) {
     recentActions: []
   })
   
+  // State for active groups management
+  const [activeGroups, setActiveGroups] = useState([])
+  const [loadingActiveGroups, setLoadingActiveGroups] = useState(false)
+  
   // Modal states
   const [showScheduleModal, setShowScheduleModal] = useState(false)
   const [showTopicModal, setShowTopicModal] = useState(false)
   const [editingSchedule, setEditingSchedule] = useState(null)
   const [editingTopic, setEditingTopic] = useState(null)
   
-  // Form states
+  // Form states - simplified to only countdown defaults
   const [scheduleForm, setScheduleForm] = useState({
     level: 'beginner',
-    start_time: '20:00',
-    end_time: '23:00',
-    days_of_week: [1,2,3,4,5,6,7],
+    default_countdown_hours: 0,
+    default_countdown_minutes: 30,
     is_active: true
   })
   
@@ -99,6 +105,37 @@ export default function AdminDashboard({ user }) {
     }
   }
 
+  const loadActiveGroups = async () => {
+    setLoadingActiveGroups(true)
+    try {
+      console.log('🔄 Loading active groups...')
+      
+      const { data, error } = await supabase.rpc('get_admin_active_groups', {
+        admin_id_param: user.id
+      })
+      
+      if (error) {
+        console.error('❌ Active groups error:', error)
+        setError(`Failed to load active groups: ${error.message}`)
+        return
+      }
+
+      if (data?.error) {
+        setError(data.error)
+        return
+      }
+
+      console.log('✅ Active groups loaded:', data.groups)
+      setActiveGroups(data.groups || [])
+      
+    } catch (error) {
+      console.error('❌ Error loading active groups:', error)
+      setError('Failed to load active groups')
+    } finally {
+      setLoadingActiveGroups(false)
+    }
+  }
+
   const saveSchedule = async () => {
     setSaving(true)
     setError('')
@@ -107,9 +144,8 @@ export default function AdminDashboard({ user }) {
         user_id_param: user.id,
         schedule_id: editingSchedule?.id || null,
         level_param: scheduleForm.level,
-        start_time_param: scheduleForm.start_time,
-        end_time_param: scheduleForm.end_time,
-        days_of_week_param: scheduleForm.days_of_week,
+        default_countdown_hours_param: scheduleForm.default_countdown_hours,
+        default_countdown_minutes_param: scheduleForm.default_countdown_minutes,
         is_active_param: scheduleForm.is_active
       })
 
@@ -118,7 +154,7 @@ export default function AdminDashboard({ user }) {
       if (data?.success) {
         setShowScheduleModal(false)
         setEditingSchedule(null)
-        setScheduleForm({ level: 'beginner', start_time: '20:00', end_time: '23:00', days_of_week: [1,2,3,4,5,6,7], is_active: true })
+        setScheduleForm({ level: 'beginner', default_countdown_hours: 0, default_countdown_minutes: 30, is_active: true })
         await loadAdminData()
         console.log('✅ Schedule saved successfully')
       } else {
@@ -208,13 +244,53 @@ export default function AdminDashboard({ user }) {
     }
   }
 
+  const handleGroupAction = async (groupId, action, groupName) => {
+    const actionNames = {
+      'close': 'close',
+      'delete': 'delete', 
+      'extend': 'extend by 1 hour'
+    }
+
+    const confirmMessage = action === 'delete' 
+      ? `Are you sure you want to DELETE group "${groupName}"? This cannot be undone.`
+      : `Are you sure you want to ${actionNames[action]} group "${groupName}"?`
+
+    if (!confirm(confirmMessage)) return
+
+    try {
+      const { data, error } = await supabase.rpc('admin_manage_group', {
+        admin_id_param: user.id,
+        group_id_param: groupId,
+        action_param: action
+      })
+
+      if (error) throw error
+
+      if (data.success) {
+        await loadActiveGroups() // Refresh the groups list
+        alert(`✅ ${data.message}`)
+      } else {
+        alert(`❌ ${data.error}`)
+      }
+    } catch (error) {
+      console.error(`Error ${action}ing group:`, error)
+      alert(`Failed to ${action} group`)
+    }
+  }
+
+  // Load active groups when tab changes to active-groups
+  useEffect(() => {
+    if (activeTab === 'active-groups' && user) {
+      loadActiveGroups()
+    }
+  }, [activeTab, user])
+
   const editSchedule = (schedule) => {
     setEditingSchedule(schedule)
     setScheduleForm({
       level: schedule.level,
-      start_time: schedule.start_time,
-      end_time: schedule.end_time,
-      days_of_week: schedule.days_of_week,
+      default_countdown_hours: schedule.default_countdown_hours || 0,
+      default_countdown_minutes: schedule.default_countdown_minutes || 30,
       is_active: schedule.is_active
     })
     setShowScheduleModal(true)
@@ -245,6 +321,16 @@ export default function AdminDashboard({ user }) {
       case 'active': return 'text-green-400 bg-green-500/10 border-green-500/30'
       case 'suspended': return 'text-yellow-400 bg-yellow-500/10 border-yellow-500/30'
       case 'banned': return 'text-red-400 bg-red-500/10 border-red-500/30'
+      default: return 'text-gray-400 bg-gray-500/10 border-gray-500/30'
+    }
+  }
+
+  const getGroupStatusColor = (status) => {
+    switch (status) {
+      case 'waiting': return 'text-yellow-400 bg-yellow-500/10 border-yellow-500/30'
+      case 'active': return 'text-green-400 bg-green-500/10 border-green-500/30'
+      case 'scheduled': return 'text-blue-400 bg-blue-500/10 border-blue-500/30'
+      case 'full': return 'text-blue-400 bg-blue-500/10 border-blue-500/30'
       default: return 'text-gray-400 bg-gray-500/10 border-gray-500/30'
     }
   }
@@ -324,7 +410,8 @@ export default function AdminDashboard({ user }) {
         <div className="flex flex-wrap sm:flex-nowrap gap-1 mb-6 bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-1">
           {[
             { id: 'overview', label: 'Overview', icon: BarChart3 },
-            { id: 'schedules', label: 'Group Times', icon: Clock },
+            { id: 'active-groups', label: 'Active Groups', icon: Activity },
+            { id: 'schedules', label: 'Countdown Defaults', icon: Clock },
             { id: 'topics', label: 'Topics', icon: MessageSquare },
             { id: 'users', label: 'Users', icon: Users },
             { id: 'settings', label: 'Settings', icon: Settings }
@@ -413,17 +500,123 @@ export default function AdminDashboard({ user }) {
           </div>
         )}
 
+        {/* Active Groups Tab */}
+        {activeTab === 'active-groups' && (
+          <div className="space-y-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <h2 className="text-xl sm:text-2xl font-light text-white">Active Groups Management</h2>
+              <button
+                onClick={loadActiveGroups}
+                className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-xl transition-colors flex items-center justify-center space-x-2"
+              >
+                <RefreshCw className="h-4 w-4" />
+                <span>Refresh</span>
+              </button>
+            </div>
+
+            {loadingActiveGroups ? (
+              <div className="text-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+                <p className="text-white/60">Loading active groups...</p>
+              </div>
+            ) : activeGroups.length > 0 ? (
+              <div className="space-y-4">
+                {activeGroups.map((group) => {
+                  const timeRemaining = group.time_remaining > 0 
+                    ? `${Math.floor(group.time_remaining / 3600)}h ${Math.floor((group.time_remaining % 3600) / 60)}m`
+                    : 'Expired'
+                  
+                  return (
+                    <div key={group.id} className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-6">
+                      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                        <div className="flex-1">
+                          <div className="flex items-center space-x-3 mb-2">
+                            <h3 className="text-white font-medium text-lg">{group.name}</h3>
+                            <span className={`px-2 py-1 rounded-full text-xs font-medium border ${getLevelColor(group.level)}`}>
+                              {group.level}
+                            </span>
+                            <span className={`px-2 py-1 rounded-full text-xs font-medium border ${getGroupStatusColor(group.status)}`}>
+                              {group.status}
+                            </span>
+                          </div>
+                          
+                          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm">
+                            <div>
+                              <p className="text-white/60">Host</p>
+                              <p className="text-white">{group.host?.display_name || 'Unknown'}</p>
+                            </div>
+                            <div>
+                              <p className="text-white/60">Participants</p>
+                              <p className="text-white">{group.participant_count}/{group.max_participants}</p>
+                            </div>
+                            <div>
+                              <p className="text-white/60">Time Remaining</p>
+                              <p className={`font-medium ${group.time_remaining > 0 ? 'text-blue-400' : 'text-red-400'}`}>
+                                {timeRemaining}
+                              </p>
+                            </div>
+                          </div>
+                          
+                          <div className="mt-3">
+                            <p className="text-white/60 text-sm">Topic</p>
+                            <p className="text-white font-medium">{group.topic?.title || 'No topic'}</p>
+                          </div>
+                        </div>
+                        
+                        <div className="flex flex-col sm:flex-row gap-2">
+                          <button
+                            onClick={() => handleGroupAction(group.id, 'extend', group.name)}
+                            className="flex items-center justify-center space-x-2 py-2 px-4 bg-green-600/20 hover:bg-green-600/30 border border-green-500/30 rounded-lg transition-colors"
+                            title="Extend group by 1 hour"
+                          >
+                            <Timer className="h-4 w-4 text-green-400" />
+                            <span className="text-green-400 text-sm">Extend +1h</span>
+                          </button>
+                          
+                          <button
+                            onClick={() => handleGroupAction(group.id, 'close', group.name)}
+                            className="flex items-center justify-center space-x-2 py-2 px-4 bg-yellow-600/20 hover:bg-yellow-600/30 border border-yellow-500/30 rounded-lg transition-colors"
+                            title="Close group now"
+                          >
+                            <StopCircle className="h-4 w-4 text-yellow-400" />
+                            <span className="text-yellow-400 text-sm">Close Now</span>
+                          </button>
+                          
+                          <button
+                            onClick={() => handleGroupAction(group.id, 'delete', group.name)}
+                            className="flex items-center justify-center space-x-2 py-2 px-4 bg-red-600/20 hover:bg-red-600/30 border border-red-500/30 rounded-lg transition-colors"
+                            title="Delete group permanently"
+                          >
+                            <Trash2 className="h-4 w-4 text-red-400" />
+                            <span className="text-red-400 text-sm">Delete</span>
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            ) : (
+              <div className="text-center py-12">
+                <Activity className="h-16 w-16 text-gray-600 mx-auto mb-4" />
+                <h3 className="text-xl font-semibold text-white mb-2">No Active Groups</h3>
+                <p className="text-gray-400">No groups are currently active. Create a group to see it here.</p>
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Group Schedules Tab */}
         {activeTab === 'schedules' && (
           <div className="space-y-6">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-              <h2 className="text-xl sm:text-2xl font-light text-white">Group Opening Times</h2>
+              <h2 className="text-xl sm:text-2xl font-light text-white">Default Countdown Settings</h2>
               <button
                 onClick={() => setShowScheduleModal(true)}
                 className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-xl transition-colors flex items-center justify-center space-x-2"
               >
                 <Plus className="h-4 w-4" />
-                <span>Add Schedule</span>
+                <span>Add Countdown Default</span>
               </button>
             </div>
 
@@ -447,7 +640,9 @@ export default function AdminDashboard({ user }) {
                   <div className="space-y-2">
                     <div className="flex items-center space-x-2">
                       <Clock className="h-4 w-4 text-white/60" />
-                      <span className="text-white">{schedule.start_time} - {schedule.end_time}</span>
+                      <span className="text-white">
+                        Default: {schedule.default_countdown_hours || 0}h {schedule.default_countdown_minutes || 30}m
+                      </span>
                     </div>
                     <div className="flex items-center space-x-2">
                       {schedule.is_active ? (
@@ -749,7 +944,7 @@ export default function AdminDashboard({ user }) {
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <div className="bg-gray-800 rounded-2xl p-4 sm:p-6 w-full max-w-md border border-gray-700 mx-4">
             <h3 className="text-xl font-bold text-white mb-4">
-              {editingSchedule ? 'Edit Schedule' : 'Add Schedule'}
+              {editingSchedule ? 'Edit Countdown Default' : 'Add Countdown Default'}
             </h3>
             
             <div className="space-y-4">
@@ -766,24 +961,44 @@ export default function AdminDashboard({ user }) {
                 </select>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">Start Time</label>
-                  <input
-                    type="time"
-                    value={scheduleForm.start_time}
-                    onChange={(e) => setScheduleForm(prev => ({ ...prev, start_time: e.target.value }))}
-                    className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white"
-                  />
+              {/* Countdown Settings */}
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">Default Countdown for New Groups</label>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs text-gray-400 mb-1">Hours</label>
+                    <select
+                      value={scheduleForm.default_countdown_hours}
+                      onChange={(e) => setScheduleForm(prev => ({ ...prev, default_countdown_hours: parseInt(e.target.value) }))}
+                      className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white"
+                    >
+                      <option value={0}>0 hours</option>
+                      <option value={1}>1 hour</option>
+                      <option value={2}>2 hours</option>
+                      <option value={3}>3 hours</option>
+                      <option value={6}>6 hours</option>
+                      <option value={12}>12 hours</option>
+                      <option value={24}>24 hours</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs text-gray-400 mb-1">Minutes</label>
+                    <select
+                      value={scheduleForm.default_countdown_minutes}
+                      onChange={(e) => setScheduleForm(prev => ({ ...prev, default_countdown_minutes: parseInt(e.target.value) }))}
+                      className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white"
+                    >
+                      <option value={0}>0 minutes</option>
+                      <option value={15}>15 minutes</option>
+                      <option value={30}>30 minutes</option>
+                      <option value={45}>45 minutes</option>
+                    </select>
+                  </div>
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">End Time</label>
-                  <input
-                    type="time"
-                    value={scheduleForm.end_time}
-                    onChange={(e) => setScheduleForm(prev => ({ ...prev, end_time: e.target.value }))}
-                    className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white"
-                  />
+                <div className="text-center mt-2 p-2 bg-blue-500/10 rounded-lg">
+                  <span className="text-blue-400 text-sm">
+                    Default: {scheduleForm.default_countdown_hours}h {scheduleForm.default_countdown_minutes}m
+                  </span>
                 </div>
               </div>
 
@@ -805,7 +1020,7 @@ export default function AdminDashboard({ user }) {
                 onClick={() => {
                   setShowScheduleModal(false)
                   setEditingSchedule(null)
-                  setScheduleForm({ level: 'beginner', start_time: '20:00', end_time: '23:00', days_of_week: [1,2,3,4,5,6,7], is_active: true })
+                  setScheduleForm({ level: 'beginner', default_countdown_hours: 0, default_countdown_minutes: 30, is_active: true })
                 }}
                 className="flex-1 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors text-white"
               >

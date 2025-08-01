@@ -12,22 +12,152 @@ import {
   Hash,
   Shield,
   CheckCircle,
-  Eye
+  Eye,
+  StopCircle,
+  Trash2,
+  Timer,
+  Settings
 } from 'lucide-react'
+
+// ScheduledGroupCard component for displaying scheduled groups with simple countdown
+const ScheduledGroupCard = ({ group }) => {
+  const [timeLeft, setTimeLeft] = useState(null)
+  
+  useEffect(() => {
+    const timer = setInterval(() => {
+      const now = new Date()
+      const activationTime = new Date(group.activation_time)
+      const diff = activationTime - now
+      
+      if (diff > 0) {
+        const hours = Math.floor(diff / (1000 * 60 * 60))
+        const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60))
+        const seconds = Math.floor((diff % (1000 * 60)) / 1000)
+        setTimeLeft({ hours, minutes, seconds })
+      } else {
+        setTimeLeft(null) // Ready to activate
+      }
+    }, 1000)
+    
+    return () => clearInterval(timer)
+  }, [group.activation_time])
+
+  const formatTime = (timestamp) => {
+    return new Date(timestamp).toLocaleTimeString([], { 
+      hour: '2-digit', 
+      minute: '2-digit' 
+    })
+  }
+
+  const getLevelColor = (level) => {
+    switch (level) {
+      case 'beginner': return 'text-green-400'
+      case 'intermediate': return 'text-yellow-400'
+      case 'advanced': return 'text-red-400'
+      default: return 'text-gray-400'
+    }
+  }
+
+  const getActivationTime = () => {
+    if (!group.activation_time) return 'Loading...'
+    return new Date(group.activation_time).toLocaleTimeString([], { 
+      hour: '2-digit', 
+      minute: '2-digit' 
+    })
+  }
+
+  return (
+    <div className="bg-gray-800 rounded-xl p-4 sm:p-6 border border-gray-700 opacity-90">
+      {/* Group Header */}
+      <div className="flex items-start justify-between mb-4">
+        <div className="flex-1">
+          <h3 className="text-lg font-semibold text-white mb-1">
+            {group.name}
+          </h3>
+          <p className="text-sm text-gray-400">
+            Hosted by {group.host?.display_name}
+          </p>
+        </div>
+        <div className="flex flex-col items-end space-y-2">
+          <span className="px-2 py-1 bg-blue-500/20 text-blue-400 text-xs rounded-full border border-blue-500/30">
+            Scheduled
+          </span>
+          <span className={`px-2 py-1 rounded-full text-xs font-medium ${getLevelColor(group.level)} bg-current/10`}>
+            {group.level}
+          </span>
+        </div>
+      </div>
+
+      {/* Simple Countdown Display */}
+      {timeLeft ? (
+        <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-3 mb-4">
+          <div className="flex items-center justify-center space-x-2">
+            <Clock className="h-4 w-4 text-blue-400" />
+            <span className="text-blue-400 text-sm font-medium">
+              Opens in: {timeLeft.hours > 0 && `${timeLeft.hours}h `}
+              {timeLeft.minutes}m {timeLeft.seconds}s
+            </span>
+          </div>
+          <div className="text-center mt-1">
+            <span className="text-blue-300 text-xs">
+              Activates at {getActivationTime()}
+            </span>
+          </div>
+        </div>
+      ) : (
+        <div className="bg-green-500/10 border border-green-500/30 rounded-lg p-3 mb-4">
+          <div className="flex items-center justify-center space-x-2">
+            <CheckCircle className="h-4 w-4 text-green-400" />
+            <span className="text-green-400 text-sm font-medium">
+              Ready to join!
+            </span>
+          </div>
+        </div>
+      )}
+
+      {/* Topic */}
+      <div className="mb-4">
+        <h4 className="text-sm font-medium text-blue-400 mb-1">Debate Topic:</h4>
+        <p className="text-white font-medium">{group.topic?.title}</p>
+        {group.topic?.description && (
+          <p className="text-sm text-gray-400 mt-1">{group.topic.description}</p>
+        )}
+      </div>
+
+      {/* Participants Info */}
+      <div className="flex items-center justify-between text-sm">
+        <div className="flex items-center space-x-2">
+          <Users className="h-4 w-4 text-gray-400" />
+          <span className="text-gray-300">
+            {group.participants?.length || 0}/{group.max_participants || 10} spots
+          </span>
+        </div>
+        <div className="flex items-center space-x-2">
+          <Calendar className="h-4 w-4 text-gray-400" />
+          <span className="text-gray-300">
+            {formatTime(group.scheduled_start)} - {formatTime(group.scheduled_end)}
+          </span>
+        </div>
+      </div>
+    </div>
+  )
+}
 
 export default function GroupDebates({ user }) {
   const navigate = useNavigate()
   const [groups, setGroups] = useState([])
+  const [scheduledGroups, setScheduledGroups] = useState([])
+  const [activeGroups, setActiveGroups] = useState([])
   const [debateTopics, setDebateTopics] = useState([])
   const [selectedTopic, setSelectedTopic] = useState(null)
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [groupName, setGroupName] = useState('')
+  // Countdown values loaded from AdminDashboard defaults - not editable here
+  const [countdownHours, setCountdownHours] = useState(0)
+  const [countdownMinutes, setCountdownMinutes] = useState(30)
   const [loading, setLoading] = useState(true)
   const [creating, setCreating] = useState(false)
-  const [currentSchedule, setCurrentSchedule] = useState(null)
-  const [timeUntilDebate, setTimeUntilDebate] = useState(null)
-  const [isDebateTime, setIsDebateTime] = useState(false)
-  const [currentTime, setCurrentTime] = useState(new Date())
+  // Removed old schedule-based states - using simple countdown system only
   const [isAdmin, setIsAdmin] = useState(false)
   const [adminCheckLoading, setAdminCheckLoading] = useState(true)
   const [selectedLevel, setSelectedLevel] = useState('beginner')
@@ -36,7 +166,6 @@ export default function GroupDebates({ user }) {
     if (user) {
       fetchGroups()
       fetchDebateTopics()
-      fetchCurrentSchedule()
       checkAdminStatus()
     }
   }, [user])
@@ -63,63 +192,45 @@ export default function GroupDebates({ user }) {
     }
   }
 
-  // Timer effect to update countdown every second
+  // Removed old schedule-based timer - countdown now handled in individual cards
+
+  // Auto-activation timer for scheduled groups
   useEffect(() => {
-    const timer = setInterval(() => {
-      setCurrentTime(new Date())
-      if (currentSchedule) {
-        calculateTimeUntilDebate()
+    const activationTimer = setInterval(async () => {
+      try {
+        console.log('🔄 Checking for groups to activate...')
+        
+        // Activate scheduled groups whose time has arrived
+        const { data, error } = await supabase.rpc('activate_scheduled_groups')
+        
+        if (error) {
+          console.error('❌ Error in activate_scheduled_groups:', error)
+        } else {
+          console.log('✅ Auto-activation check completed:', data)
+          if (data && data.activated_count > 0) {
+            console.log(`🎉 Activated ${data.activated_count} groups!`)
+          }
+        }
+        
+        // Always refresh groups to get latest status
+        await fetchGroups()
+        
+      } catch (error) {
+        console.error('❌ Error in activation timer:', error)
       }
-    }, 1000)
+    }, 10000) // Check every 10 seconds for more responsive updates
 
-    return () => clearInterval(timer)
-  }, [currentSchedule])
+    return () => clearInterval(activationTimer)
+  }, [])
 
-  const calculateTimeUntilDebate = () => {
-    if (!currentSchedule) return
+  // Removed old debate time activation - now handled by simple auto-activation timer
 
-    const now = new Date()
-    const [startHours, startMinutes] = currentSchedule.start_time.split(':').map(Number)
-    const [endHours, endMinutes] = currentSchedule.end_time.split(':').map(Number)
-
-    // Create today's start and end times
-    const todayStart = new Date()
-    todayStart.setHours(startHours, startMinutes, 0, 0)
-    
-    const todayEnd = new Date()
-    todayEnd.setHours(endHours, endMinutes, 0, 0)
-
-    // If end time is before start time, it means it goes to next day
-    if (todayEnd < todayStart) {
-      todayEnd.setDate(todayEnd.getDate() + 1)
-    }
-
-    // Check if we're currently in debate time
-    if (now >= todayStart && now <= todayEnd) {
-      setIsDebateTime(true)
-      setTimeUntilDebate(null)
-      return
-    }
-
-    // Calculate time until next debate session
-    let nextDebateStart = new Date(todayStart)
-    
-    // If we're past today's debate time, schedule for tomorrow
-    if (now > todayEnd) {
-      nextDebateStart.setDate(nextDebateStart.getDate() + 1)
-    }
-
-    const timeDiff = nextDebateStart - now
-    const hours = Math.floor(timeDiff / (1000 * 60 * 60))
-    const minutes = Math.floor((timeDiff % (1000 * 60 * 60)) / (1000 * 60))
-    const seconds = Math.floor((timeDiff % (1000 * 60)) / 1000)
-
-    setIsDebateTime(false)
-    setTimeUntilDebate({ hours, minutes, seconds })
-  }
+  // Removed complex schedule calculation - using simple countdown system only
 
   const fetchGroups = async () => {
     try {
+      console.log('🔄 Fetching groups...')
+      
       let query = supabase
         .from('groups')
         .select(`
@@ -127,7 +238,7 @@ export default function GroupDebates({ user }) {
           topic:debate_topics(title, description),
           host:users(display_name)
         `)
-        .in('status', ['waiting', 'active'])
+        .in('status', ['waiting', 'active', 'scheduled'])
         .gte('scheduled_end', new Date().toISOString())
         .order('created_at', { ascending: false })
 
@@ -139,9 +250,25 @@ export default function GroupDebates({ user }) {
       const { data, error } = await query
 
       if (error) throw error
-      setGroups(data || [])
+      
+      const allGroups = data || []
+      
+      // Separate groups by status (exclude closed groups)
+      const active = allGroups.filter(g => ['waiting', 'active'].includes(g.status))
+      const scheduled = allGroups.filter(g => g.status === 'scheduled')
+      
+      console.log('📊 Groups fetched:', {
+        total: allGroups.length,
+        active: active.length,
+        scheduled: scheduled.length,
+        statuses: allGroups.map(g => ({ name: g.name, status: g.status }))
+      })
+      
+      setGroups(allGroups) // Keep for backward compatibility
+      setActiveGroups(active)
+      setScheduledGroups(scheduled)
     } catch (error) {
-      console.error('Error fetching groups:', error)
+      console.error('❌ Error fetching groups:', error)
     }
   }
 
@@ -163,12 +290,30 @@ export default function GroupDebates({ user }) {
     }
   }
 
-  // Refetch topics when selected level changes
+  // Refetch topics and load countdown defaults when selected level changes
   useEffect(() => {
     if (isAdmin && selectedLevel) {
       fetchDebateTopics()
+      loadCountdownDefaults()
     }
   }, [selectedLevel, isAdmin])
+
+  const loadCountdownDefaults = async () => {
+    try {
+      const { data, error } = await supabase
+        .rpc('get_countdown_defaults', { level_param: selectedLevel })
+
+      if (error) throw error
+      
+      if (data) {
+        setCountdownHours(data.default_countdown_hours || 0)
+        setCountdownMinutes(data.default_countdown_minutes || 30)
+      }
+    } catch (error) {
+      console.error('Error loading countdown defaults:', error)
+      // Keep current values as fallback
+    }
+  }
 
   // Refetch groups when admin status changes
   useEffect(() => {
@@ -177,27 +322,7 @@ export default function GroupDebates({ user }) {
     }
   }, [isAdmin, adminCheckLoading])
 
-  const fetchCurrentSchedule = async () => {
-    try {
-      const { data, error } = await supabase
-        .rpc('get_level_schedule', { level_param: user.english_level })
-
-      if (error) throw error
-      setCurrentSchedule(data)
-      
-      // Calculate initial countdown
-      if (data) {
-        setTimeout(() => calculateTimeUntilDebate(), 100)
-      }
-    } catch (error) {
-      console.error('Error fetching schedule:', error)
-      // Fallback to default times if database fails
-      setCurrentSchedule({
-        start_time: '20:00:00',
-        end_time: '23:00:00'
-      })
-    }
-  }
+  // Removed schedule fetching - no longer needed for simple countdown system
 
   const createGroup = async () => {
     if (!selectedTopic || !groupName.trim()) return
@@ -210,7 +335,9 @@ export default function GroupDebates({ user }) {
           group_name_param: groupName.trim(),
           level_param: selectedLevel,
           topic_id_param: selectedTopic.id,
-          admin_id_param: user.id
+          admin_id_param: user.id,
+          countdown_hours_param: countdownHours,
+          countdown_minutes_param: countdownMinutes
         })
 
       if (error) throw error
@@ -219,8 +346,15 @@ export default function GroupDebates({ user }) {
         setShowCreateModal(false)
         setSelectedTopic(null)
         setGroupName('')
+        // Reset to defaults for selected level
+        loadCountdownDefaults()
         fetchGroups()
-        alert(`${selectedLevel.charAt(0).toUpperCase() + selectedLevel.slice(1)} group created successfully!`)
+        
+        const totalMinutes = (countdownHours * 60) + countdownMinutes
+        const message = totalMinutes === 0 
+          ? `${selectedLevel.charAt(0).toUpperCase() + selectedLevel.slice(1)} group created and active now!`
+          : `${selectedLevel.charAt(0).toUpperCase() + selectedLevel.slice(1)} group will activate in ${countdownHours}h ${countdownMinutes}m!`
+        alert(message)
       } else {
         alert(data.error)
       }
@@ -284,23 +418,7 @@ export default function GroupDebates({ user }) {
     })
   }
 
-  const formatTimeFromString = (timeString) => {
-    if (!timeString) return ''
-    const [hours, minutes] = timeString.split(':')
-    const date = new Date()
-    date.setHours(parseInt(hours), parseInt(minutes))
-    return date.toLocaleTimeString([], { 
-      hour: '2-digit', 
-      minute: '2-digit' 
-    })
-  }
-
-  const getScheduleDisplay = () => {
-    if (!currentSchedule) return 'Loading schedule...'
-    const startTime = formatTimeFromString(currentSchedule.start_time)
-    const endTime = formatTimeFromString(currentSchedule.end_time)
-    return `${startTime} - ${endTime}`
-  }
+  // Removed schedule display functions - no longer needed
 
   const getGroupStatusColor = (status) => {
     switch (status) {
@@ -322,6 +440,59 @@ export default function GroupDebates({ user }) {
 
   const canCreateGroup = () => {
     return isAdmin && !adminCheckLoading
+  }
+
+  // Admin group management functions
+  const handleAdminGroupAction = async (groupId, action, groupName) => {
+    const actionNames = {
+      'close': 'close',
+      'delete': 'delete', 
+      'extend': 'extend by 1 hour'
+    }
+
+    const confirmMessage = action === 'delete' 
+      ? `Are you sure you want to DELETE group "${groupName}"? This cannot be undone.`
+      : `Are you sure you want to ${actionNames[action]} group "${groupName}"?`
+
+    if (!confirm(confirmMessage)) return
+
+    try {
+      const { data, error } = await supabase.rpc('admin_manage_group', {
+        admin_id_param: user.id,
+        group_id_param: groupId,
+        action_param: action
+      })
+
+      if (error) throw error
+
+      if (data.success) {
+        await fetchGroups() // Refresh the groups list
+        alert(`✅ ${data.message}`)
+      } else {
+        alert(`❌ ${data.error}`)
+      }
+    } catch (error) {
+      console.error(`Error ${action}ing group:`, error)
+      alert(`Failed to ${action} group`)
+    }
+  }
+
+  // Calculate time remaining for active groups
+  const getTimeRemaining = (scheduledEnd) => {
+    const now = new Date()
+    const endTime = new Date(scheduledEnd)
+    const diff = endTime - now
+
+    if (diff <= 0) return 'Expired'
+
+    const hours = Math.floor(diff / (1000 * 60 * 60))
+    const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60))
+
+    if (hours > 0) {
+      return `${hours}h ${minutes}m left`
+    } else {
+      return `${minutes}m left`
+    }
   }
 
   if (loading) {
@@ -352,25 +523,19 @@ export default function GroupDebates({ user }) {
             </div>
             
             <div className="flex flex-col sm:flex-row sm:items-center space-y-2 sm:space-y-0 sm:space-x-4">
-              <div className="flex items-center space-x-2 text-gray-300">
-                <Clock className="h-4 w-4" />
-                <span className="text-sm">{getScheduleDisplay()}</span>
+              {/* Simple Status Display */}
+              <div className="flex items-center space-x-2 px-3 py-1 bg-green-500/10 border border-green-500/30 rounded-lg">
+                <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+                <span className="text-sm text-green-400">Debates Available</span>
               </div>
               
-              {/* Countdown or Status Display */}
-              {!isDebateTime && timeUntilDebate && (
-                <div className="flex items-center space-x-2 px-3 py-1 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
-                  <Clock className="h-4 w-4 text-yellow-400" />
-                  <span className="text-sm text-yellow-400">
-                    Opens in: {timeUntilDebate.hours}h {timeUntilDebate.minutes}m {timeUntilDebate.seconds}s
+              {/* Scheduled groups indicator */}
+              {scheduledGroups.length > 0 && (
+                <div className="flex items-center space-x-2 px-2 py-1 bg-blue-500/10 border border-blue-500/30 rounded-lg">
+                  <Calendar className="h-4 w-4 text-blue-400" />
+                  <span className="text-blue-400 text-sm">
+                    {scheduledGroups.length} scheduled
                   </span>
-                </div>
-              )}
-              
-              {isDebateTime && (
-                <div className="flex items-center space-x-2 px-3 py-1 bg-green-500/10 border border-green-500/30 rounded-lg">
-                  <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
-                  <span className="text-sm text-green-400">Debates are OPEN!</span>
                 </div>
               )}
               
@@ -381,7 +546,7 @@ export default function GroupDebates({ user }) {
               >
                 <Plus className="h-4 w-4" />
                 <span className="text-white text-sm">
-                  {isAdmin ? 'Create Group (Admin)' : 'Admin Only'}
+                  {isAdmin ? 'Create Group' : 'Admin Only'}
                 </span>
               </button>
             </div>
@@ -406,25 +571,55 @@ export default function GroupDebates({ user }) {
               </p>
             </div>
             <div className="text-center sm:text-right">
-              <div className="text-xl sm:text-2xl font-bold text-white">{groups.length}/5</div>
+              <div className="text-xl sm:text-2xl font-bold text-white">{activeGroups.length}/5</div>
               <div className="text-sm text-gray-400">Active Groups</div>
+              {scheduledGroups.length > 0 && (
+                <div className="text-sm text-blue-400 mt-1">
+                  +{scheduledGroups.length} scheduled
+                </div>
+              )}
             </div>
           </div>
         </div>
 
-        {/* Groups Grid */}
-        {groups.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-            {groups.map((group) => {
-              const isParticipant = group.participants?.includes(user.id)
-              const participantCount = group.participants?.length || 0
-              const maxParticipants = group.max_participants || 10
+        {/* Scheduled Groups Section */}
+        {scheduledGroups.length > 0 && (
+          <div className="mb-8">
+            <h3 className="text-lg font-medium text-white mb-4 flex items-center space-x-2">
+              <Calendar className="h-5 w-5 text-blue-400" />
+              <span>Upcoming Groups</span>
+              <span className="text-sm text-gray-400">({scheduledGroups.length})</span>
+            </h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+              {scheduledGroups.map((group) => (
+                <ScheduledGroupCard 
+                  key={group.id} 
+                  group={group}
+                />
+              ))}
+            </div>
+          </div>
+        )}
 
-              return (
-                <div
-                  key={group.id}
-                  className="bg-gray-800 rounded-xl p-4 sm:p-6 border border-gray-700 hover:border-gray-600 transition-colors"
-                >
+        {/* Active Groups Section */}
+        {activeGroups.length > 0 && (
+          <div className="mb-8">
+            <h3 className="text-lg font-medium text-white mb-4 flex items-center space-x-2">
+              <Users className="h-5 w-5 text-green-400" />
+              <span>Active Groups - Join Now!</span>
+              <span className="text-sm text-gray-400">({activeGroups.length})</span>
+            </h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+              {activeGroups.map((group) => {
+                const isParticipant = group.participants?.includes(user.id)
+                const participantCount = group.participants?.length || 0
+                const maxParticipants = group.max_participants || 10
+
+                return (
+                  <div
+                    key={group.id}
+                    className="bg-gray-800 rounded-xl p-4 sm:p-6 border border-gray-700 hover:border-gray-600 transition-colors"
+                  >
                   {/* Group Header */}
                   <div className="flex items-start justify-between mb-4">
                     <div className="flex-1">
@@ -449,19 +644,33 @@ export default function GroupDebates({ user }) {
                     )}
                   </div>
 
-                  {/* Participants */}
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center space-x-2">
-                      <Users className="h-4 w-4 text-gray-400" />
-                      <span className="text-sm text-gray-300">
-                        {participantCount}/{maxParticipants} participants
-                      </span>
+                  {/* Participants and Time Info */}
+                  <div className="space-y-2 mb-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-2">
+                        <Users className="h-4 w-4 text-gray-400" />
+                        <span className="text-sm text-gray-300">
+                          {participantCount}/{maxParticipants} participants
+                        </span>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <Calendar className="h-4 w-4 text-gray-400" />
+                        <span className="text-sm text-gray-300">
+                          {formatTime(group.scheduled_start)} - {formatTime(group.scheduled_end)}
+                        </span>
+                      </div>
                     </div>
-                    <div className="flex items-center space-x-2">
-                      <Calendar className="h-4 w-4 text-gray-400" />
-                      <span className="text-sm text-gray-300">
-                        {formatTime(group.scheduled_start)} - {formatTime(group.scheduled_end)}
-                      </span>
+                    
+                    {/* Time Remaining Display */}
+                    <div className="flex items-center justify-center">
+                      <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg px-3 py-1">
+                        <div className="flex items-center space-x-2">
+                          <Clock className="h-3 w-3 text-blue-400" />
+                          <span className="text-blue-400 text-xs font-medium">
+                            Auto-closes: {getTimeRemaining(group.scheduled_end)}
+                          </span>
+                        </div>
+                      </div>
                     </div>
                   </div>
 
@@ -514,71 +723,83 @@ export default function GroupDebates({ user }) {
                       <Eye className="h-4 w-4 text-gray-300" />
                     </button>
                   </div>
+
+                  {/* Admin Controls - Only visible to admins */}
+                  {isAdmin && (
+                    <div className="mt-4 pt-4 border-t border-gray-600">
+                      <div className="flex items-center space-x-2 mb-2">
+                        <Settings className="h-4 w-4 text-purple-400" />
+                        <span className="text-purple-400 text-xs font-medium">Admin Controls</span>
+                      </div>
+                      <div className="grid grid-cols-3 gap-2">
+                        <button
+                          onClick={() => handleAdminGroupAction(group.id, 'extend', group.name)}
+                          className="flex items-center justify-center space-x-1 py-2 px-3 bg-green-600/20 hover:bg-green-600/30 border border-green-500/30 rounded-lg transition-colors"
+                          title="Extend group by 1 hour"
+                        >
+                          <Timer className="h-3 w-3 text-green-400" />
+                          <span className="text-green-400 text-xs">+1h</span>
+                        </button>
+                        
+                        <button
+                          onClick={() => handleAdminGroupAction(group.id, 'close', group.name)}
+                          className="flex items-center justify-center space-x-1 py-2 px-3 bg-yellow-600/20 hover:bg-yellow-600/30 border border-yellow-500/30 rounded-lg transition-colors"
+                          title="Close group now"
+                        >
+                          <StopCircle className="h-3 w-3 text-yellow-400" />
+                          <span className="text-yellow-400 text-xs">Close</span>
+                        </button>
+                        
+                        <button
+                          onClick={() => handleAdminGroupAction(group.id, 'delete', group.name)}
+                          className="flex items-center justify-center space-x-1 py-2 px-3 bg-red-600/20 hover:bg-red-600/30 border border-red-500/30 rounded-lg transition-colors"
+                          title="Delete group permanently"
+                        >
+                          <Trash2 className="h-3 w-3 text-red-400" />
+                          <span className="text-red-400 text-xs">Delete</span>
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )
             })}
+            </div>
           </div>
-        ) : (
+        )}
+
+        {/* Empty State - Show when no active groups during debate time or no scheduled groups */}
+        {(scheduledGroups.length === 0 && activeGroups.length === 0) && (
           <div className="text-center py-12">
             <Users className="h-16 w-16 text-gray-600 mx-auto mb-4" />
-            {isDebateTime ? (
+            <h3 className="text-xl font-semibold text-white mb-2">No Groups Available</h3>
+            {isAdmin ? (
               <>
-                <h3 className="text-xl font-semibold text-white mb-2">No Active Groups</h3>
-                {isAdmin ? (
-                  <>
-                    <p className="text-gray-400 mb-6">
-                      Create the first debate group for tonight as an admin!
-                    </p>
-                    <button
-                      onClick={() => setShowCreateModal(true)}
-                      disabled={!canCreateGroup()}
-                      className="px-6 py-3 bg-purple-600 hover:bg-purple-700 disabled:bg-gray-600 disabled:cursor-not-allowed rounded-lg transition-colors"
-                    >
-                      <span className="text-white font-medium">Create First Group (Admin)</span>
-                    </button>
-                  </>
-                ) : (
-                  <>
-                    <p className="text-gray-400 mb-4">
-                      No debate groups have been created yet.
-                    </p>
-                    <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-4 max-w-md mx-auto">
-                      <div className="flex items-center justify-center space-x-2 mb-2">
-                        <Shield className="h-5 w-5 text-blue-400" />
-                        <span className="text-blue-400 font-medium">Admin Access Required</span>
-                      </div>
-                      <p className="text-gray-300 text-sm">
-                        Only administrators can create debate groups. Wait for an admin to create groups you can join.
-                      </p>
-                    </div>
-                  </>
-                )}
+                <p className="text-gray-400 mb-6">
+                  Create the first debate group as an admin!
+                </p>
+                <button
+                  onClick={() => setShowCreateModal(true)}
+                  disabled={!canCreateGroup()}
+                  className="px-6 py-3 bg-purple-600 hover:bg-purple-700 disabled:bg-gray-600 disabled:cursor-not-allowed rounded-lg transition-colors"
+                >
+                  <span className="text-white font-medium">Create First Group (Admin)</span>
+                </button>
               </>
             ) : (
               <>
-                <h3 className="text-xl font-semibold text-white mb-2">Debates Are Closed</h3>
                 <p className="text-gray-400 mb-4">
-                  Group debates for {user?.english_level} level are currently closed.
+                  No debate groups have been created yet.
                 </p>
-                {timeUntilDebate && (
-                  <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-4 mb-6 max-w-md mx-auto">
-                    <div className="flex items-center justify-center space-x-2 mb-2">
-                      <Clock className="h-5 w-5 text-yellow-400" />
-                      <span className="text-yellow-400 font-medium">Next Session Opens In:</span>
-                    </div>
-                    <div className="text-2xl font-bold text-white">
-                      {timeUntilDebate.hours.toString().padStart(2, '0')}:
-                      {timeUntilDebate.minutes.toString().padStart(2, '0')}:
-                      {timeUntilDebate.seconds.toString().padStart(2, '0')}
-                    </div>
-                    <div className="text-sm text-gray-400 mt-2">
-                      Scheduled: {getScheduleDisplay()}
-                    </div>
+                <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-4 max-w-md mx-auto">
+                  <div className="flex items-center justify-center space-x-2 mb-2">
+                    <Shield className="h-5 w-5 text-blue-400" />
+                    <span className="text-blue-400 font-medium">Admin Access Required</span>
                   </div>
-                )}
-                <p className="text-gray-500 text-sm">
-                  Come back during scheduled hours to join or create debate groups!
-                </p>
+                  <p className="text-gray-300 text-sm">
+                    Only administrators can create debate groups. Wait for an admin to create groups you can join.
+                  </p>
+                </div>
               </>
             )}
           </div>
@@ -653,6 +874,34 @@ export default function GroupDebates({ user }) {
                       </div>
                     ))}
                   </div>
+                </div>
+
+                {/* Countdown Display (From AdminDashboard Defaults) */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                    Countdown Timer (From Admin Defaults):
+                  </label>
+                  
+                  <div className="text-center p-3 bg-blue-500/10 border border-blue-500/30 rounded-lg">
+                    <span className="text-blue-400 text-lg font-medium">
+                      {countdownHours}h {countdownMinutes}m
+                      {countdownHours === 0 && countdownMinutes === 0 && " (Immediate)"}
+                    </span>
+                    <p className="text-blue-300 text-xs mt-1">
+                      Default for {selectedLevel} level
+                    </p>
+                  </div>
+                  
+                  <p className="text-xs text-gray-400 mt-2 text-center">
+                    {countdownHours === 0 && countdownMinutes === 0 
+                      ? "Group will be available immediately for users to join"
+                      : `Group will be visible to users but locked for ${countdownHours}h ${countdownMinutes}m`
+                    }
+                  </p>
+                  
+                  <p className="text-xs text-yellow-400 mt-1 text-center">
+                    💡 To change defaults, go to Admin Dashboard → Countdown Defaults
+                  </p>
                 </div>
               </div>
 
