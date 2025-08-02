@@ -8,8 +8,7 @@ import {
   Trophy, 
   LogOut,
   ArrowRight,
-  Flame,
-  Clock
+  Flame
 } from 'lucide-react'
 
 export default function Dashboard({ user }) {
@@ -231,11 +230,7 @@ export default function Dashboard({ user }) {
               <div className="bg-purple-500/20 rounded-full p-3">
                 <Users className="h-6 w-6 text-purple-400" />
               </div>
-              <div className="flex items-center space-x-2">
-                <Clock className="h-4 w-4 text-white/50" />
-                <span className="text-xs text-white/50">8-11 PM</span>
-                <ArrowRight className="h-5 w-5 text-white/30 group-hover:text-white/60 group-hover:translate-x-1 transition-all" />
-              </div>
+              <ArrowRight className="h-5 w-5 text-white/30 group-hover:text-white/60 group-hover:translate-x-1 transition-all" />
             </div>
             <h3 className="text-xl font-medium text-white mb-2">Debates</h3>
             <p className="text-white/60 text-sm">

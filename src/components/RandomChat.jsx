@@ -25,13 +25,16 @@ export default function RandomChat({ user }) {
   const [availableUsers, setAvailableUsers] = useState([])
   const [loadingUsers, setLoadingUsers] = useState(false)
   const [pendingRequests, setPendingRequests] = useState([])
+  const [sentRequests, setSentRequests] = useState([])
   const [showNewChatModal, setShowNewChatModal] = useState(false)
   const [selectedUser, setSelectedUser] = useState(null)
   const [requestMessage, setRequestMessage] = useState('')
   const [realtimeStatus, setRealtimeStatus] = useState('connecting') // 'connecting', 'connected', 'disconnected'
+  const [recentStatusUpdate, setRecentStatusUpdate] = useState(null) // For showing real-time update notifications
   
   const messagesEndRef = useRef(null)
   const subscriptionsRef = useRef(new Map())
+  const matchRequestSubscriptionRef = useRef(null)
 
   // Voice recording hook
   const {
@@ -62,8 +65,12 @@ export default function RandomChat({ user }) {
       try {
         await Promise.all([
           checkForActiveChats(),
-          loadPendingRequests()
+          loadPendingRequests(),
+          loadSentRequests()
         ])
+        
+        // Setup real-time subscriptions
+        setupMatchRequestSubscription()
       } catch (error) {
         console.error('❌ Chat initialization failed:', error)
         setError('Failed to load chats')
@@ -82,17 +89,35 @@ export default function RandomChat({ user }) {
         console.log('- Active Chats:', activeChats)
         console.log('- Current Chat ID:', currentChatId)
         console.log('- Pending Requests:', pendingRequests)
+        console.log('- Sent Requests:', sentRequests)
         console.log('- Available Users:', availableUsers)
         console.log('- Loading:', loading)
         console.log('- Error:', error)
         console.log('- Real-time Status:', realtimeStatus)
-        console.log('- Subscriptions:', Array.from(subscriptionsRef.current.keys()))
+        console.log('- Chat Subscriptions:', Array.from(subscriptionsRef.current.keys()))
+        console.log('- Match Request Subscription:', matchRequestSubscriptionRef.current ? 'Active' : 'Inactive')
+        console.log('- Recent Status Update:', recentStatusUpdate)
       }
       
       window.refreshChats = () => {
         console.log('🔄 Force refreshing chats...')
         setError('')
         checkForActiveChats()
+        loadPendingRequests()
+        loadSentRequests()
+      }
+      
+      window.testMatchRequestSubscription = () => {
+        console.log('🧪 Testing match request subscription...')
+        console.log('- Subscription active:', matchRequestSubscriptionRef.current ? 'Yes' : 'No')
+        console.log('- User ID:', user.id)
+        console.log('- Sent requests count:', sentRequests.length)
+        
+        if (matchRequestSubscriptionRef.current) {
+          console.log('- Subscription channel:', matchRequestSubscriptionRef.current.topic)
+        } else {
+          console.log('❌ No match request subscription found')
+        }
       }
       
       window.testChatFunction = async () => {
@@ -169,11 +194,17 @@ export default function RandomChat({ user }) {
     }
     
     return () => {
-      // Cleanup subscriptions
+      // Cleanup chat subscriptions
       subscriptionsRef.current.forEach(subscription => {
         subscription.unsubscribe()
       })
       subscriptionsRef.current.clear()
+      
+      // Cleanup match request subscription
+      if (matchRequestSubscriptionRef.current) {
+        matchRequestSubscriptionRef.current.unsubscribe()
+        matchRequestSubscriptionRef.current = null
+      }
       
       // Cleanup voice recording
       cleanupVoice()
@@ -185,6 +216,7 @@ export default function RandomChat({ user }) {
         delete window.testChatFunction
         delete window.testRealtimeConnection
         delete window.sendTestMessage
+        delete window.testMatchRequestSubscription
       }
     }
   }, [user])
@@ -424,6 +456,124 @@ export default function RandomChat({ user }) {
     }
   }
 
+  // Load sent requests
+  const loadSentRequests = async () => {
+    try {
+      const { data, error } = await supabase.rpc('get_sent_match_requests')
+      if (error) throw error
+      setSentRequests(data || [])
+      console.log(`📤 Loaded ${data?.length || 0} sent requests`)
+    } catch (error) {
+      console.error('❌ Error loading sent requests:', error)
+    }
+  }
+
+  // Setup real-time subscription for match request status updates
+  const setupMatchRequestSubscription = () => {
+    if (!user) return
+
+    // Clean up existing subscription
+    if (matchRequestSubscriptionRef.current) {
+      console.log('🧹 Cleaning up existing match request subscription')
+      matchRequestSubscriptionRef.current.unsubscribe()
+    }
+
+    console.log('🔔 Setting up real-time subscription for match requests')
+    
+    const subscription = supabase
+      .channel(`match_requests_${user.id}_${Date.now()}`)
+      .on('postgres_changes', {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'match_requests',
+        filter: `requester_id=eq.${user.id}` // Only listen for updates to requests we sent
+      }, async (payload) => {
+        console.log('📨 Match request status updated:', payload.new)
+        
+        const updatedRequest = payload.new
+        
+        // Update the sent requests list
+        setSentRequests(prev => prev.map(request => 
+          request.id === updatedRequest.id 
+            ? { ...request, status: updatedRequest.status, responded_at: updatedRequest.responded_at }
+            : request
+        ))
+
+        // Show notification for status change
+        const currentRequest = sentRequests.find(r => r.id === updatedRequest.id)
+        if (currentRequest) {
+          setRecentStatusUpdate({
+            targetName: currentRequest.target_name,
+            status: updatedRequest.status,
+            timestamp: new Date()
+          })
+          
+          // Hide notification after 5 seconds
+          setTimeout(() => {
+            setRecentStatusUpdate(null)
+          }, 5000)
+        }
+
+        // If request was accepted, check for new chat session
+        if (updatedRequest.status === 'accepted') {
+          console.log('🎉 Match request accepted! Checking for new chat session...')
+          
+          // Small delay to ensure chat session is created
+          setTimeout(async () => {
+            await checkForActiveChats()
+          }, 1000)
+        }
+
+        console.log(`✅ Updated match request status to: ${updatedRequest.status}`)
+      })
+      .on('postgres_changes', {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'chat_sessions',
+        filter: `participants.cs.{${user.id}}` // Listen for new chat sessions where user is participant
+      }, async (payload) => {
+        console.log('📨 New chat session created:', payload.new)
+        
+        // Add the new chat session
+        if (payload.new.participants.includes(user.id)) {
+          console.log('🎉 New chat session includes current user, adding to active chats')
+          await addNewChatSession(payload.new.id)
+        }
+      })
+      .subscribe((status) => {
+        console.log(`🔔 Match requests subscription status:`, status)
+        
+        if (status === 'SUBSCRIBED') {
+          console.log(`✅ Real-time match request subscription active`)
+          setRealtimeStatus('connected')
+        } else if (status === 'CHANNEL_ERROR') {
+          console.error(`❌ Real-time match request subscription error`)
+          setRealtimeStatus('disconnected')
+          
+          // Retry subscription after a delay
+          setTimeout(() => {
+            console.log('🔄 Retrying match request subscription')
+            setRealtimeStatus('connecting')
+            setupMatchRequestSubscription()
+          }, 2000)
+        } else if (status === 'TIMED_OUT') {
+          console.warn(`⏰ Match request subscription timed out, retrying...`)
+          setRealtimeStatus('connecting')
+          
+          // Retry subscription
+          setTimeout(() => {
+            setupMatchRequestSubscription()
+          }, 1000)
+        } else if (status === 'CLOSED') {
+          console.warn(`🔌 Match request subscription closed`)
+          setRealtimeStatus('disconnected')
+        }
+      })
+
+    matchRequestSubscriptionRef.current = subscription
+    return subscription
+  }
+
   // Load available users
   const loadAvailableUsers = async () => {
     if (loadingUsers) return
@@ -539,7 +689,10 @@ export default function RandomChat({ user }) {
         setShowNewChatModal(false)
         setRequestMessage('')
         setSelectedUser(null)
-        await loadAvailableUsers()
+        await Promise.all([
+          loadAvailableUsers(),
+          loadSentRequests()
+        ])
         console.log('✅ Match request sent successfully')
       } else {
         setError(data.error)
@@ -565,7 +718,10 @@ export default function RandomChat({ user }) {
       if (error) throw error
 
       if (data && data.success) {
-        await loadPendingRequests()
+        await Promise.all([
+          loadPendingRequests(),
+          loadSentRequests()
+        ])
         
         if (response === 'accepted' && data.chat_session_id) {
           console.log('🎉 Match accepted! New chat session:', data.chat_session_id)
@@ -733,6 +889,43 @@ export default function RandomChat({ user }) {
       </header>
 
       <div className="max-w-6xl mx-auto px-6 py-6">
+        {/* Real-time Status Update Notification */}
+        {recentStatusUpdate && (
+          <div className={`mb-4 p-4 rounded-xl border transition-all duration-500 ${
+            recentStatusUpdate.status === 'accepted' 
+              ? 'bg-green-500/10 border-green-500/30' 
+              : 'bg-red-500/10 border-red-500/30'
+          }`}>
+            <div className="flex items-center space-x-3">
+              <div className={`w-3 h-3 rounded-full animate-pulse ${
+                recentStatusUpdate.status === 'accepted' ? 'bg-green-400' : 'bg-red-400'
+              }`}></div>
+              <div>
+                <p className={`font-medium ${
+                  recentStatusUpdate.status === 'accepted' ? 'text-green-400' : 'text-red-400'
+                }`}>
+                  {recentStatusUpdate.status === 'accepted' 
+                    ? `🎉 ${recentStatusUpdate.targetName} accepted your request!` 
+                    : `😔 ${recentStatusUpdate.targetName} declined your request`
+                  }
+                </p>
+                <p className="text-white/60 text-sm">
+                  {recentStatusUpdate.status === 'accepted' 
+                    ? 'A new chat has been created. Check your active chats!' 
+                    : 'You can send requests to other people'
+                  }
+                </p>
+              </div>
+              <button
+                onClick={() => setRecentStatusUpdate(null)}
+                className="text-white/40 hover:text-white/60 ml-auto"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+          </div>
+        )}
+
         {error && (
           <div className="mb-4 p-4 bg-red-500/10 border border-red-500/30 rounded-xl">
             <div className="flex items-center justify-between">
@@ -784,6 +977,77 @@ export default function RandomChat({ user }) {
                     >
                       Decline
                     </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Sent Requests */}
+        {sentRequests.length > 0 && (
+          <div className="mb-6 bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-4">
+            <h3 className="text-white font-medium mb-3 flex items-center space-x-2">
+              <MessageCircle className="h-4 w-4 text-blue-400" />
+              <span>Your Sent Requests ({sentRequests.length})</span>
+            </h3>
+            <div className="space-y-2">
+              {sentRequests.map((request) => (
+                <div key={request.id} className="p-3 bg-white/5 rounded-xl">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-3">
+                      <div className="bg-gradient-to-r from-blue-400 to-purple-500 rounded-full w-10 h-10 flex items-center justify-center">
+                        <span className="text-white font-medium text-sm">
+                          {request.target_name?.charAt(0).toUpperCase() || '?'}
+                        </span>
+                      </div>
+                      <div>
+                        <div className="flex items-center space-x-2">
+                          <p className="text-white font-medium">{request.target_name}</p>
+                          {request.target_gender && (
+                            <span className={`text-xs ${
+                              request.target_gender === 'male' ? 'text-blue-400' : 'text-pink-400'
+                            }`}>
+                              {request.target_gender === 'male' ? '♂' : '♀'}
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-white/60 text-sm">{request.target_level} level</p>
+                        {request.message && (
+                          <div className="mt-1 p-2 bg-white/10 rounded-lg">
+                            <p className="text-white/80 text-sm italic">"{request.message}"</p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <div className={`px-2 py-1 rounded-full text-xs font-medium ${
+                        request.status === 'pending' 
+                          ? 'bg-yellow-500/20 text-yellow-400' 
+                          : request.status === 'accepted'
+                          ? 'bg-green-500/20 text-green-400'
+                          : 'bg-red-500/20 text-red-400'
+                      }`}>
+                        {request.status === 'pending' ? '⏳ Pending' : 
+                         request.status === 'accepted' ? '✅ Accepted' : '❌ Declined'}
+                      </div>
+                      <p className="text-white/40 text-xs mt-1">
+                        {new Date(request.created_at).toLocaleString([], {
+                          month: 'short',
+                          day: 'numeric',
+                          hour: '2-digit',
+                          minute: '2-digit'
+                        })}
+                      </p>
+                      {request.status === 'pending' && request.expires_at && (
+                        <p className="text-white/40 text-xs">
+                          Expires: {new Date(request.expires_at).toLocaleTimeString([], {
+                            hour: '2-digit',
+                            minute: '2-digit'
+                          })}
+                        </p>
+                      )}
+                    </div>
                   </div>
                 </div>
               ))}

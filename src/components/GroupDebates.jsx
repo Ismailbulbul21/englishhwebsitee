@@ -20,8 +20,9 @@ import {
 } from 'lucide-react'
 
 // ScheduledGroupCard component for displaying scheduled groups with simple countdown
-const ScheduledGroupCard = ({ group }) => {
+const ScheduledGroupCard = ({ group, onCountdownComplete }) => {
   const [timeLeft, setTimeLeft] = useState(null)
+  const [hasTriggeredComplete, setHasTriggeredComplete] = useState(false)
   
   useEffect(() => {
     const timer = setInterval(() => {
@@ -34,13 +35,20 @@ const ScheduledGroupCard = ({ group }) => {
         const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60))
         const seconds = Math.floor((diff % (1000 * 60)) / 1000)
         setTimeLeft({ hours, minutes, seconds })
+        setHasTriggeredComplete(false) // Reset when countdown is active
       } else {
         setTimeLeft(null) // Ready to activate
+        // Trigger completion callback only once
+        if (!hasTriggeredComplete && onCountdownComplete) {
+          console.log(`⏰ Countdown completed for group: ${group.name}, triggering activation check`)
+          setHasTriggeredComplete(true)
+          onCountdownComplete(group.id)
+        }
       }
     }, 1000)
     
     return () => clearInterval(timer)
-  }, [group.activation_time])
+  }, [group.activation_time, hasTriggeredComplete, onCountdownComplete, group.id, group.name])
 
   const formatTime = (timestamp) => {
     return new Date(timestamp).toLocaleTimeString([], { 
@@ -161,14 +169,126 @@ export default function GroupDebates({ user }) {
   const [isAdmin, setIsAdmin] = useState(false)
   const [adminCheckLoading, setAdminCheckLoading] = useState(true)
   const [selectedLevel, setSelectedLevel] = useState('beginner')
+  const [realtimeSubscription, setRealtimeSubscription] = useState(null)
 
   useEffect(() => {
     if (user) {
       fetchGroups()
       fetchDebateTopics()
       checkAdminStatus()
+      setupRealtimeSubscription()
+    }
+    
+    return () => {
+      // Cleanup subscription on unmount
+      if (realtimeSubscription) {
+        realtimeSubscription.unsubscribe()
+      }
     }
   }, [user])
+
+  // Setup real-time subscription for group status changes
+  const setupRealtimeSubscription = () => {
+    if (!user) return
+
+    console.log('🔔 Setting up real-time subscription for group status changes')
+    
+    const subscription = supabase
+      .channel(`group_status_updates_${Date.now()}`)
+      .on('postgres_changes', {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'groups'
+        // Listen to all groups - filter in the handler since Supabase filters are limited
+      }, (payload) => {
+        // Filter by user level unless admin
+        if (!isAdmin && payload.new.level !== user.english_level) {
+          return // Ignore groups not for user's level
+        }
+        console.log('📨 Group status updated:', payload.new)
+        
+        const updatedGroup = payload.new
+        
+        // Check if this is a status change from scheduled to waiting/active
+        if (payload.old?.status === 'scheduled' && ['waiting', 'active'].includes(updatedGroup.status)) {
+          console.log(`🎉 Group "${updatedGroup.name}" is now ${updatedGroup.status}! Moving to active groups.`)
+          
+          // Refresh groups to get the latest data
+          fetchGroups()
+        }
+        
+        // Also handle other status changes
+        if (payload.old?.status !== updatedGroup.status) {
+          console.log(`🔄 Group status changed: ${payload.old?.status} → ${updatedGroup.status}`)
+          fetchGroups()
+        }
+      })
+      .on('postgres_changes', {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'groups'
+      }, (payload) => {
+        console.log('➕ New group created:', payload.new)
+        fetchGroups()
+      })
+      .on('postgres_changes', {
+        event: 'DELETE',
+        schema: 'public', 
+        table: 'groups'
+      }, (payload) => {
+        console.log('🗑️ Group deleted:', payload.old)
+        fetchGroups()
+      })
+      .subscribe((status) => {
+        console.log(`🔔 Groups subscription status:`, status)
+        
+        if (status === 'SUBSCRIBED') {
+          console.log(`✅ Real-time groups subscription active`)
+        } else if (status === 'CHANNEL_ERROR') {
+          console.error(`❌ Real-time groups subscription error`)
+          
+          // Retry subscription after a delay
+          setTimeout(() => {
+            console.log('🔄 Retrying groups subscription')
+            setupRealtimeSubscription()
+          }, 2000)
+        } else if (status === 'TIMED_OUT') {
+          console.warn(`⏰ Groups subscription timed out, retrying...`)
+          
+          // Retry subscription
+          setTimeout(() => {
+            setupRealtimeSubscription()
+          }, 1000)
+        }
+      })
+
+    setRealtimeSubscription(subscription)
+  }
+
+  // Handle countdown completion - trigger immediate activation check
+  const handleCountdownComplete = async (groupId) => {
+    console.log(`🚀 Triggering immediate activation check for group: ${groupId}`)
+    
+    try {
+      // Force activation check
+      const { data, error } = await supabase.rpc('activate_scheduled_groups')
+      
+      if (error) {
+        console.error('❌ Error in immediate activation check:', error)
+      } else {
+        console.log('✅ Immediate activation check completed:', data)
+        if (data && data.activated_count > 0) {
+          console.log(`🎉 Immediately activated ${data.activated_count} groups!`)
+        }
+      }
+      
+      // Refresh groups immediately
+      await fetchGroups()
+      
+    } catch (error) {
+      console.error('❌ Error in immediate activation:', error)
+    }
+  }
 
   const checkAdminStatus = async () => {
     try {
@@ -218,7 +338,7 @@ export default function GroupDebates({ user }) {
       } catch (error) {
         console.error('❌ Error in activation timer:', error)
       }
-    }, 10000) // Check every 10 seconds for more responsive updates
+    }, 5000) // Check every 5 seconds for more responsive updates
 
     return () => clearInterval(activationTimer)
   }, [])
@@ -319,6 +439,11 @@ export default function GroupDebates({ user }) {
   useEffect(() => {
     if (user && !adminCheckLoading) {
       fetchGroups()
+      // Restart subscription with updated admin filter
+      if (realtimeSubscription) {
+        realtimeSubscription.unsubscribe()
+      }
+      setupRealtimeSubscription()
     }
   }, [isAdmin, adminCheckLoading])
 
@@ -595,6 +720,7 @@ export default function GroupDebates({ user }) {
                 <ScheduledGroupCard 
                   key={group.id} 
                   group={group}
+                  onCountdownComplete={handleCountdownComplete}
                 />
               ))}
             </div>
