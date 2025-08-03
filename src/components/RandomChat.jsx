@@ -268,40 +268,42 @@ export default function RandomChat({ user }) {
       console.log('🔍 Checking for expired requests...')
       console.log(`📊 Current requests count: ${sentRequests.length}`)
       
-      // Check if any pending requests have expired
-      const expiredRequests = sentRequests.filter(request => 
-        request.status === 'pending' && 
-        request.expires_at && 
-        new Date(request.expires_at) < new Date()
-      )
+      // Check if any requests should be removed (expired OR accepted/rejected)
+      const requestsToRemove = sentRequests.filter(request => {
+        const isExpired = request.status === 'pending' && request.expires_at && new Date(request.expires_at) < new Date()
+        const isCompleted = request.status === 'accepted' || request.status === 'rejected'
+        return isExpired || isCompleted
+      })
       
-      console.log(`⏰ Found ${expiredRequests.length} expired requests:`, expiredRequests.map(r => ({
+      console.log(`⏰ Found ${requestsToRemove.length} requests to remove:`, requestsToRemove.map(r => ({
         target: r.target_name,
+        status: r.status,
         expires_at: r.expires_at,
-        now: new Date().toISOString(),
-        isExpired: new Date(r.expires_at) < new Date()
+        reason: r.status !== 'pending' ? 'completed' : 'expired'
       })))
       
-      if (expiredRequests.length > 0) {
-        console.log('🕐 Removing expired requests from UI...')
-        // Remove expired pending requests from state
+      if (requestsToRemove.length > 0) {
+        console.log('🕐 Removing completed/expired requests from UI...')
+        // Remove expired pending requests and completed requests from state
         setSentRequests(prev => {
           const filtered = prev.filter(request => {
-            const isExpired = request.expires_at && new Date(request.expires_at) < new Date()
-            const shouldKeep = !isExpired || request.status !== 'pending'
+            const isExpired = request.status === 'pending' && request.expires_at && new Date(request.expires_at) < new Date()
+            const isCompleted = request.status === 'accepted' || request.status === 'rejected'
+            const shouldRemove = isExpired || isCompleted
             
-            if (!shouldKeep) {
-              console.log(`❌ Removing expired request to ${request.target_name}`)
+            if (shouldRemove) {
+              const reason = request.status !== 'pending' ? `${request.status}` : 'expired'
+              console.log(`❌ Removing ${reason} request to ${request.target_name}`)
             }
             
-            return shouldKeep
+            return !shouldRemove
           })
           
           console.log(`📊 Requests after filtering: ${filtered.length} (was ${prev.length})`)
           return filtered
         })
       } else {
-        console.log('✅ No expired requests found')
+        console.log('✅ No requests to remove found')
       }
     }, 60000) // Check every 1 minute
 
@@ -547,17 +549,19 @@ export default function RandomChat({ user }) {
       console.log(`📤 Loaded ${data?.length || 0} sent requests`)
       console.log('📤 Raw sent requests data:', data)
       
-      // Filter out expired pending requests immediately upon loading
+      // Filter out expired pending requests AND completed requests immediately upon loading
       if (data) {
         const filteredData = data.filter(request => {
-          const isExpired = request.expires_at && new Date(request.expires_at) < new Date()
-          const shouldKeep = !isExpired || request.status !== 'pending'
+          const isExpired = request.status === 'pending' && request.expires_at && new Date(request.expires_at) < new Date()
+          const isCompleted = request.status === 'accepted' || request.status === 'rejected'
+          const shouldRemove = isExpired || isCompleted
           
-          if (!shouldKeep) {
-            console.log(`🗑️ Filtering out expired request to ${request.target_name} (expired at ${request.expires_at})`)
+          if (shouldRemove) {
+            const reason = request.status !== 'pending' ? `${request.status}` : 'expired'
+            console.log(`🗑️ Filtering out ${reason} request to ${request.target_name}`)
           }
           
-          return shouldKeep
+          return !shouldRemove
         })
         
         console.log(`📤 After filtering: ${filteredData.length} requests (was ${data.length})`)
@@ -1090,11 +1094,11 @@ export default function RandomChat({ user }) {
 
         {/* Sent Requests */}
         {(() => {
-          // Filter out expired pending requests
+          // Filter out expired pending requests AND accepted/rejected requests
           const activeRequests = sentRequests.filter(request => {
             const isExpired = request.expires_at && new Date(request.expires_at) < new Date()
-            // Keep request if it's not expired, or if it's expired but not pending (accepted/declined)
-            return !isExpired || request.status !== 'pending'
+            // Only show pending requests that haven't expired
+            return request.status === 'pending' && !isExpired
           })
           
           return activeRequests.length > 0 && (
@@ -1631,37 +1635,50 @@ export default function RandomChat({ user }) {
                     <div className="animate-pulse text-white/60">Loading partners...</div>
                   </div>
                 ) : availableUsers.length > 0 ? (
-                  <div className="space-y-2 max-h-64 overflow-y-auto">
-                    {availableUsers.map((availableUser) => (
-                      <button
-                        key={availableUser.id}
-                        onClick={() => setSelectedUser(availableUser)}
-                        className="w-full p-3 bg-white/5 hover:bg-white/10 rounded-xl text-left transition-colors"
-                      >
-                        <div className="flex items-center space-x-3">
-                          <div className="bg-gradient-to-r from-blue-400 to-purple-500 rounded-full w-10 h-10 flex items-center justify-center">
-                            <span className="text-white font-medium text-sm">
-                              {availableUser.display_name.charAt(0).toUpperCase()}
-                            </span>
-                          </div>
-                          <div className="flex-1">
-                            <div className="flex items-center justify-between">
-                              <p className="text-white font-medium">{availableUser.display_name}</p>
-                              <div className="flex items-center space-x-2">
-                                <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                                  availableUser.gender === 'male' 
-                                    ? 'bg-blue-500/20 text-blue-400' 
-                                    : 'bg-pink-500/20 text-pink-400'
-                                }`}>
-                                  {availableUser.gender === 'male' ? '♂ Male' : '♀ Female'}
+                  <div>
+                    <div className="mb-4 p-3 bg-blue-500/10 border border-blue-500/30 rounded-xl">
+                      <p className="text-blue-400 text-sm text-center">
+                        💡 Click "Send Request" to invite someone to chat with you
+                      </p>
+                    </div>
+                    <div className="space-y-3 max-h-64 overflow-y-auto">
+                      {availableUsers.map((availableUser) => (
+                        <div
+                          key={availableUser.id}
+                          className="p-3 bg-white/5 rounded-xl border border-white/10"
+                        >
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center space-x-3">
+                              <div className="bg-gradient-to-r from-blue-400 to-purple-500 rounded-full w-10 h-10 flex items-center justify-center">
+                                <span className="text-white font-medium text-sm">
+                                  {availableUser.display_name.charAt(0).toUpperCase()}
                                 </span>
                               </div>
+                              <div className="flex-1">
+                                <div className="flex items-center space-x-2">
+                                  <p className="text-white font-medium">{availableUser.display_name}</p>
+                                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                                    availableUser.gender === 'male' 
+                                      ? 'bg-blue-500/20 text-blue-400' 
+                                      : 'bg-pink-500/20 text-pink-400'
+                                  }`}>
+                                    {availableUser.gender === 'male' ? '♂' : '♀'}
+                                  </span>
+                                </div>
+                                <p className="text-white/60 text-sm">{availableUser.english_level} level</p>
+                              </div>
                             </div>
-                            <p className="text-white/60 text-sm">{availableUser.english_level} level</p>
+                            <button
+                              onClick={() => setSelectedUser(availableUser)}
+                              className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center space-x-2"
+                            >
+                              <MessageCircle className="h-4 w-4" />
+                              <span>Send Request</span>
+                            </button>
                           </div>
                         </div>
-                      </button>
-                    ))}
+                      ))}
+                    </div>
                   </div>
                 ) : (
                   <div className="text-center py-8">
