@@ -1378,29 +1378,29 @@ export default function Lessons({ user }) {
           </div>
         )}
 
-        <div className="flex justify-between items-center pt-6 border-t border-gray-700">
+        <div className="flex flex-col sm:flex-row justify-between items-center pt-4 sm:pt-6 border-t border-gray-700 space-y-3 sm:space-y-0">
           <button
             onClick={() => setSelectedLesson(null)}
-            className="flex items-center space-x-2 px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors"
+            className="w-full sm:w-auto flex items-center justify-center space-x-2 px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors order-2 sm:order-1"
           >
             <ArrowLeft className="h-4 w-4" />
-            <span className="text-white">Back to Lessons</span>
+            <span className="text-white text-sm sm:text-base">Back to Lessons</span>
           </button>
           
           <button
             onClick={() => completeLesson(lesson)}
             disabled={loading}
-            className="flex items-center space-x-2 px-6 py-2 bg-green-600 hover:bg-green-700 disabled:bg-gray-600 disabled:cursor-not-allowed rounded-lg transition-colors"
+            className="w-full sm:w-auto flex items-center justify-center space-x-2 px-4 sm:px-6 py-2 bg-green-600 hover:bg-green-700 disabled:bg-gray-600 disabled:cursor-not-allowed rounded-lg transition-colors order-1 sm:order-2"
           >
             {loading ? (
               <>
                 <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                <span className="text-white">Completing...</span>
+                <span className="text-white text-sm sm:text-base">Completing...</span>
               </>
             ) : (
               <>
                 <CheckCircle className="h-4 w-4" />
-                <span className="text-white">Complete Lesson</span>
+                <span className="text-white text-sm sm:text-base">Complete Lesson</span>
               </>
             )}
           </button>
@@ -1425,33 +1425,48 @@ export default function Lessons({ user }) {
 
   return (
     <div className="min-h-screen bg-gray-900">
-      {/* Header */}
+      {/* Header - Responsive */}
       <header className="bg-gray-800 border-b border-gray-700">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
-            <div className="flex items-center space-x-4">
+            {/* Left Section */}
+            <div className="flex items-center space-x-2 sm:space-x-4 min-w-0 flex-1">
               <Link
                 to="/"
-                className="flex items-center space-x-2 text-gray-400 hover:text-white transition-colors"
+                className="flex items-center space-x-1 sm:space-x-2 text-gray-400 hover:text-white transition-colors flex-shrink-0"
               >
-                <ArrowLeft className="h-5 w-5" />
-                <span>Dashboard</span>
+                <ArrowLeft className="h-4 w-4 sm:h-5 sm:w-5" />
+                <span className="hidden sm:block">Dashboard</span>
+                <span className="sm:hidden text-sm">Back</span>
               </Link>
-              <div className="h-6 w-px bg-gray-600"></div>
-              <BookOpen className="h-6 w-6 text-blue-500" />
-              <h1 className="text-xl font-bold text-white">Casharrada (Phrases Coming Soon)</h1>
+              
+              <div className="h-4 sm:h-6 w-px bg-gray-600 hidden xs:block"></div>
+              
+              <div className="flex items-center space-x-2 min-w-0">
+                <BookOpen className="h-5 w-5 sm:h-6 sm:w-6 text-blue-500 flex-shrink-0" />
+                <h1 className="text-sm sm:text-lg lg:text-xl font-bold text-white truncate">
+                  <span className="hidden sm:inline">Casharrada</span>
+                  <span className="sm:hidden">Lessons</span>
+                  <span className="hidden lg:inline"> (Phrases Coming Soon)</span>
+                </h1>
+              </div>
             </div>
             
-            <div className={`px-4 py-2 rounded-full border ${levelInfo.bg}`}>
-              <span className={`text-sm font-medium ${levelInfo.color}`}>
-                {levelInfo.title}
+            {/* Right Section - Level Badge */}
+            <div className={`px-2 sm:px-4 py-1 sm:py-2 rounded-full border ${levelInfo.bg} flex-shrink-0`}>
+              <span className={`text-xs sm:text-sm font-medium ${levelInfo.color}`}>
+                <span className="hidden sm:inline">{levelInfo.title}</span>
+                <span className="sm:hidden">
+                  {user?.english_level === 'beginner' ? 'Beg' : 
+                   user?.english_level === 'intermediate' ? 'Int' : 'Adv'}
+                </span>
               </span>
             </div>
           </div>
         </div>
       </header>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
         {completionMessage && (
           <div className="mb-6 p-4 bg-green-500/10 border border-green-500/30 rounded-lg animate-pulse">
             <p className="text-green-400 text-center font-medium">{completionMessage}</p>
@@ -1459,49 +1474,52 @@ export default function Lessons({ user }) {
         )}
 
         {selectedLesson ? (
-          <div className="bg-gray-800 rounded-xl p-8 border border-gray-700">
+          <div className="bg-gray-800 rounded-xl p-4 sm:p-6 lg:p-8 border border-gray-700">
             {renderLessonContent(selectedLesson)}
           </div>
         ) : (
           <>
-            {/* Level Info */}
-            <div className={`rounded-xl p-6 border mb-8 ${levelInfo.bg}`}>
-              <div className="flex items-center justify-between">
-                <div>
-                  <h2 className={`text-2xl font-bold mb-2 ${levelInfo.color}`}>
+            {/* Level Info - Responsive */}
+            <div className={`rounded-xl p-4 sm:p-6 border mb-6 sm:mb-8 ${levelInfo.bg}`}>
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between space-y-4 sm:space-y-0">
+                <div className="flex-1 min-w-0">
+                  <h2 className={`text-xl sm:text-2xl font-bold mb-2 ${levelInfo.color}`}>
                     {levelInfo.title}
                   </h2>
-                  <p className="text-gray-300">{levelInfo.description}</p>
+                  <p className="text-sm sm:text-base text-gray-300 leading-relaxed">{levelInfo.description}</p>
                 </div>
-                <Award className={`h-12 w-12 ${levelInfo.color}`} />
+                <Award className={`h-10 w-10 sm:h-12 sm:w-12 ${levelInfo.color} flex-shrink-0`} />
               </div>
             </div>
 
-            {/* Lesson Type Tabs */}
-            <div className="flex space-x-1 bg-gray-800 p-1 rounded-lg mb-8">
+            {/* Lesson Type Tabs - Responsive */}
+            <div className="flex space-x-1 bg-gray-800 p-1 rounded-lg mb-6 sm:mb-8">
               {[
-                { key: 'grammar', label: 'Grammar', icon: '📝' },
-                { key: 'vocabulary', label: 'Vocabulary', icon: '📚' }
+                { key: 'grammar', label: 'Grammar', icon: '📝', shortLabel: 'Grammar' },
+                { key: 'vocabulary', label: 'Vocabulary', icon: '📚', shortLabel: 'Vocab' }
                 // TEMPORARILY HIDDEN: Phrases lessons will be restored later
-                // { key: 'phrases', label: 'Phrases', icon: '💬' }
+                // { key: 'phrases', label: 'Phrases', icon: '💬', shortLabel: 'Phrases' }
               ].map((tab) => (
                 <button
                   key={tab.key}
                   onClick={() => setActiveTab(tab.key)}
-                  className={`flex-1 flex items-center justify-center space-x-2 py-3 px-4 rounded-md transition-colors ${
+                  className={`flex-1 flex items-center justify-center space-x-1 sm:space-x-2 py-2 sm:py-3 px-2 sm:px-4 rounded-md transition-colors ${
                     activeTab === tab.key
                       ? 'bg-blue-600 text-white'
                       : 'text-gray-400 hover:text-white hover:bg-gray-700'
                   }`}
                 >
-                  <span>{tab.icon}</span>
-                  <span className="font-medium">{tab.label}</span>
+                  <span className="text-sm sm:text-base">{tab.icon}</span>
+                  <span className="font-medium text-sm sm:text-base">
+                    <span className="hidden sm:inline">{tab.label}</span>
+                    <span className="sm:hidden">{tab.shortLabel}</span>
+                  </span>
                 </button>
               ))}
             </div>
 
-            {/* Lessons Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {/* Lessons Grid - Responsive */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
               {(activeTab === 'grammar' ? grammarLessons : vocabularyLessons).map((lesson, index) => {
                 const currentLessons = activeTab === 'grammar' ? grammarLessons : vocabularyLessons
                 const progress = userProgress[lesson.id]
@@ -1511,7 +1529,7 @@ export default function Lessons({ user }) {
                 return (
                   <div
                     key={lesson.id}
-                    className={`bg-gray-800 rounded-xl p-6 border transition-all ${
+                    className={`bg-gray-800 rounded-xl p-4 sm:p-6 border transition-all ${
                       isLocked
                         ? 'border-gray-700 opacity-50'
                         : isCompleted
@@ -1520,45 +1538,45 @@ export default function Lessons({ user }) {
                     }`}
                     onClick={() => !isLocked && startLesson(lesson)}
                   >
-                    <div className="flex items-start justify-between mb-4">
-                      <div className="flex items-center space-x-3">
-                        <div className={`p-2 rounded-lg ${
+                    <div className="flex items-start justify-between mb-3 sm:mb-4">
+                      <div className="flex items-start space-x-3 min-w-0 flex-1">
+                        <div className={`p-2 rounded-lg flex-shrink-0 ${
                           isCompleted ? 'bg-green-500/20' : 'bg-gray-700'
                         }`}>
                           {isCompleted ? (
-                            <CheckCircle className="h-6 w-6 text-green-400" />
+                            <CheckCircle className="h-5 w-5 sm:h-6 sm:w-6 text-green-400" />
                           ) : isLocked ? (
-                            <Lock className="h-6 w-6 text-gray-500" />
+                            <Lock className="h-5 w-5 sm:h-6 sm:w-6 text-gray-500" />
                           ) : (
-                            <span className="text-xl">{getLessonIcon(lesson.type)}</span>
+                            <span className="text-lg sm:text-xl">{getLessonIcon(lesson.type)}</span>
                           )}
                         </div>
-                        <div>
-                          <h3 className="text-lg font-semibold text-white">
+                        <div className="min-w-0 flex-1">
+                          <h3 className="text-base sm:text-lg font-semibold text-white leading-tight truncate">
                             {lesson.title}
                           </h3>
-                          <p className="text-sm text-gray-400 capitalize">
+                          <p className="text-xs sm:text-sm text-gray-400 capitalize mt-1">
                             {lesson.type} • Lesson {lesson.order_index}
                           </p>
                         </div>
                       </div>
                       
                       {!isLocked && !isCompleted && (
-                        <ChevronRight className="h-5 w-5 text-gray-400" />
+                        <ChevronRight className="h-4 w-4 sm:h-5 sm:w-5 text-gray-400 flex-shrink-0 ml-2" />
                       )}
                     </div>
 
                     {progress?.completion_date && (
-                      <div className="flex items-center space-x-2 text-sm text-green-400">
-                        <Clock className="h-4 w-4" />
-                        <span>
+                      <div className="flex items-center space-x-2 text-xs sm:text-sm text-green-400">
+                        <Clock className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
+                        <span className="truncate">
                           Completed {new Date(progress.completion_date).toLocaleDateString()}
                         </span>
                       </div>
                     )}
 
                     {isLocked && (
-                      <p className="text-sm text-gray-500 mt-2">
+                      <p className="text-xs sm:text-sm text-gray-500 mt-2 leading-relaxed">
                         Complete previous lesson to unlock
                       </p>
                     )}
@@ -1567,27 +1585,27 @@ export default function Lessons({ user }) {
               })}
             </div>
 
-            {/* Progress Summary */}
-            <div className="mt-12 bg-gray-800 rounded-xl p-6 border border-gray-700">
-              <h3 className="text-xl font-bold text-white mb-4">Your Progress</h3>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="text-center">
-                  <div className="text-3xl font-bold text-blue-400">
+            {/* Progress Summary - Responsive */}
+            <div className="mt-8 sm:mt-12 bg-gray-800 rounded-xl p-4 sm:p-6 border border-gray-700">
+              <h3 className="text-lg sm:text-xl font-bold text-white mb-4 text-center sm:text-left">Your Progress</h3>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6">
+                <div className="text-center p-4 bg-gray-700/50 rounded-lg">
+                  <div className="text-2xl sm:text-3xl font-bold text-blue-400">
                     {Object.values(userProgress).filter(p => p.is_completed).length}
                   </div>
-                  <div className="text-gray-400">Lessons Completed</div>
+                  <div className="text-sm sm:text-base text-gray-400 mt-1">Lessons Completed</div>
                 </div>
-                <div className="text-center">
-                  <div className="text-3xl font-bold text-green-400">
+                <div className="text-center p-4 bg-gray-700/50 rounded-lg">
+                  <div className="text-2xl sm:text-3xl font-bold text-green-400">
                     {Math.round((Object.values(userProgress).filter(p => p.is_completed).length / lessons.length) * 100) || 0}%
                   </div>
-                  <div className="text-gray-400">Course Progress</div>
+                  <div className="text-sm sm:text-base text-gray-400 mt-1">Course Progress</div>
                 </div>
-                <div className="text-center">
-                  <div className="text-3xl font-bold text-yellow-400">
+                <div className="text-center p-4 bg-gray-700/50 rounded-lg">
+                  <div className="text-2xl sm:text-3xl font-bold text-yellow-400">
                     {user?.current_streak || 0}
                   </div>
-                  <div className="text-gray-400">Day Streak</div>
+                  <div className="text-sm sm:text-base text-gray-400 mt-1">Day Streak</div>
                 </div>
               </div>
             </div>
