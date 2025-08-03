@@ -191,6 +191,37 @@ export default function RandomChat({ user }) {
           console.error('❌ Test message failed:', error)
         }
       }
+      
+      window.testExpirationLogic = () => {
+        console.log('🧪 Testing expiration logic manually...')
+        console.log('Current sentRequests:', sentRequests)
+        
+        const now = new Date()
+        console.log('Current time:', now.toISOString())
+        
+        sentRequests.forEach((request, index) => {
+          const expiresAt = new Date(request.expires_at)
+          const isExpired = expiresAt < now
+          console.log(`Request ${index + 1}:`, {
+            target: request.target_name,
+            status: request.status,
+            expires_at: request.expires_at,
+            expires_date: expiresAt.toISOString(),
+            is_expired: isExpired,
+            minutes_until_expiry: (expiresAt - now) / (1000 * 60)
+          })
+        })
+        
+        // Test the filtering logic
+        const filtered = sentRequests.filter(request => {
+          const isExpired = request.expires_at && new Date(request.expires_at) < new Date()
+          return !isExpired || request.status !== 'pending'
+        })
+        
+        console.log(`Filtering result: ${filtered.length} requests would remain (was ${sentRequests.length})`)
+      }
+      
+
     }
     
     return () => {
@@ -217,6 +248,9 @@ export default function RandomChat({ user }) {
         delete window.testRealtimeConnection
         delete window.sendTestMessage
         delete window.testMatchRequestSubscription
+        delete window.testExpirationLogic
+        delete window.forceRefreshRequests
+        delete window.clearExpiredRequests
       }
     }
   }, [user])
@@ -225,6 +259,54 @@ export default function RandomChat({ user }) {
   useEffect(() => {
     scrollToBottom()
   }, [activeChats, currentChatId, scrollToBottom])
+
+  // Auto-refresh sent requests to remove expired requests
+  useEffect(() => {
+    if (!user || sentRequests.length === 0) return
+
+    const interval = setInterval(() => {
+      console.log('🔍 Checking for expired requests...')
+      console.log(`📊 Current requests count: ${sentRequests.length}`)
+      
+      // Check if any pending requests have expired
+      const expiredRequests = sentRequests.filter(request => 
+        request.status === 'pending' && 
+        request.expires_at && 
+        new Date(request.expires_at) < new Date()
+      )
+      
+      console.log(`⏰ Found ${expiredRequests.length} expired requests:`, expiredRequests.map(r => ({
+        target: r.target_name,
+        expires_at: r.expires_at,
+        now: new Date().toISOString(),
+        isExpired: new Date(r.expires_at) < new Date()
+      })))
+      
+      if (expiredRequests.length > 0) {
+        console.log('🕐 Removing expired requests from UI...')
+        // Remove expired pending requests from state
+        setSentRequests(prev => {
+          const filtered = prev.filter(request => {
+            const isExpired = request.expires_at && new Date(request.expires_at) < new Date()
+            const shouldKeep = !isExpired || request.status !== 'pending'
+            
+            if (!shouldKeep) {
+              console.log(`❌ Removing expired request to ${request.target_name}`)
+            }
+            
+            return shouldKeep
+          })
+          
+          console.log(`📊 Requests after filtering: ${filtered.length} (was ${prev.length})`)
+          return filtered
+        })
+      } else {
+        console.log('✅ No expired requests found')
+      }
+    }, 60000) // Check every 1 minute
+
+    return () => clearInterval(interval)
+  }, [user, sentRequests])
 
   // Enhanced check for existing active chats - supports multiple chats
   const checkForActiveChats = async () => {
@@ -461,10 +543,32 @@ export default function RandomChat({ user }) {
     try {
       const { data, error } = await supabase.rpc('get_sent_match_requests')
       if (error) throw error
-      setSentRequests(data || [])
+      
       console.log(`📤 Loaded ${data?.length || 0} sent requests`)
+      console.log('📤 Raw sent requests data:', data)
+      
+      // Filter out expired pending requests immediately upon loading
+      if (data) {
+        const filteredData = data.filter(request => {
+          const isExpired = request.expires_at && new Date(request.expires_at) < new Date()
+          const shouldKeep = !isExpired || request.status !== 'pending'
+          
+          if (!shouldKeep) {
+            console.log(`🗑️ Filtering out expired request to ${request.target_name} (expired at ${request.expires_at})`)
+          }
+          
+          return shouldKeep
+        })
+        
+        console.log(`📤 After filtering: ${filteredData.length} requests (was ${data.length})`)
+        setSentRequests(filteredData)
+      } else {
+        setSentRequests([])
+      }
+      
     } catch (error) {
       console.error('❌ Error loading sent requests:', error)
+      setSentRequests([])
     }
   }
 
@@ -985,75 +1089,97 @@ export default function RandomChat({ user }) {
         )}
 
         {/* Sent Requests */}
-        {sentRequests.length > 0 && (
-          <div className="mb-6 bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-4">
-            <h3 className="text-white font-medium mb-3 flex items-center space-x-2">
-              <MessageCircle className="h-4 w-4 text-blue-400" />
-              <span>Your Sent Requests ({sentRequests.length})</span>
-            </h3>
-            <div className="space-y-2">
-              {sentRequests.map((request) => (
-                <div key={request.id} className="p-3 bg-white/5 rounded-xl">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-3">
-                      <div className="bg-gradient-to-r from-blue-400 to-purple-500 rounded-full w-10 h-10 flex items-center justify-center">
-                        <span className="text-white font-medium text-sm">
-                          {request.target_name?.charAt(0).toUpperCase() || '?'}
-                        </span>
-                      </div>
-                      <div>
-                        <div className="flex items-center space-x-2">
-                          <p className="text-white font-medium">{request.target_name}</p>
-                          {request.target_gender && (
-                            <span className={`text-xs ${
-                              request.target_gender === 'male' ? 'text-blue-400' : 'text-pink-400'
-                            }`}>
-                              {request.target_gender === 'male' ? '♂' : '♀'}
+        {(() => {
+          // Filter out expired pending requests
+          const activeRequests = sentRequests.filter(request => {
+            const isExpired = request.expires_at && new Date(request.expires_at) < new Date()
+            // Keep request if it's not expired, or if it's expired but not pending (accepted/declined)
+            return !isExpired || request.status !== 'pending'
+          })
+          
+          return activeRequests.length > 0 && (
+            <div className="mb-6 bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-4">
+              <h3 className="text-white font-medium mb-3 flex items-center space-x-2">
+                <MessageCircle className="h-4 w-4 text-blue-400" />
+                <span>Your Sent Requests ({activeRequests.length})</span>
+              </h3>
+              <div className="space-y-2">
+                {activeRequests.map((request) => {
+                  // Check if request has expired (for styling, though expired pending requests are filtered out)
+                  const isExpired = request.expires_at && new Date(request.expires_at) < new Date()
+                  const effectiveStatus = isExpired && request.status === 'pending' ? 'expired' : request.status
+                  
+                  return (
+                    <div key={request.id} className="p-3 bg-white/5 rounded-xl">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-3">
+                          <div className="bg-gradient-to-r from-blue-400 to-purple-500 rounded-full w-10 h-10 flex items-center justify-center">
+                            <span className="text-white font-medium text-sm">
+                              {request.target_name?.charAt(0).toUpperCase() || '?'}
                             </span>
+                          </div>
+                          <div>
+                            <div className="flex items-center space-x-2">
+                              <p className="text-white font-medium">{request.target_name}</p>
+                              {request.target_gender && (
+                                <span className={`text-xs ${
+                                  request.target_gender === 'male' ? 'text-blue-400' : 'text-pink-400'
+                                }`}>
+                                  {request.target_gender === 'male' ? '♂' : '♀'}
+                                </span>
+                              )}
+                            </div>
+                            <p className="text-white/60 text-sm">{request.target_level} level</p>
+                            {request.message && (
+                              <div className="mt-1 p-2 bg-white/10 rounded-lg">
+                                <p className="text-white/80 text-sm italic">"{request.message}"</p>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <div className={`px-2 py-1 rounded-full text-xs font-medium ${
+                            effectiveStatus === 'pending' 
+                              ? 'bg-yellow-500/20 text-yellow-400' 
+                              : effectiveStatus === 'accepted'
+                              ? 'bg-green-500/20 text-green-400'
+                              : effectiveStatus === 'expired'
+                              ? 'bg-gray-500/20 text-gray-400'
+                              : 'bg-red-500/20 text-red-400'
+                          }`}>
+                            {effectiveStatus === 'pending' ? '⏳ Pending' : 
+                             effectiveStatus === 'accepted' ? '✅ Accepted' : 
+                             effectiveStatus === 'expired' ? '⏰ Expired' :
+                             '❌ Declined'}
+                          </div>
+                          <p className="text-white/40 text-xs mt-1">
+                            {new Date(request.created_at).toLocaleString([], {
+                              month: 'short',
+                              day: 'numeric',
+                              hour: '2-digit',
+                              minute: '2-digit'
+                            })}
+                          </p>
+                          {request.expires_at && (
+                            <p className={`text-xs mt-1 ${
+                              isExpired ? 'text-red-400' : 'text-white/40'
+                            }`}>
+                              {isExpired ? 'Expired at: ' : 'Expires: '}
+                              {new Date(request.expires_at).toLocaleTimeString([], {
+                                hour: '2-digit',
+                                minute: '2-digit'
+                              })}
+                            </p>
                           )}
                         </div>
-                        <p className="text-white/60 text-sm">{request.target_level} level</p>
-                        {request.message && (
-                          <div className="mt-1 p-2 bg-white/10 rounded-lg">
-                            <p className="text-white/80 text-sm italic">"{request.message}"</p>
-                          </div>
-                        )}
                       </div>
                     </div>
-                    <div className="text-right">
-                      <div className={`px-2 py-1 rounded-full text-xs font-medium ${
-                        request.status === 'pending' 
-                          ? 'bg-yellow-500/20 text-yellow-400' 
-                          : request.status === 'accepted'
-                          ? 'bg-green-500/20 text-green-400'
-                          : 'bg-red-500/20 text-red-400'
-                      }`}>
-                        {request.status === 'pending' ? '⏳ Pending' : 
-                         request.status === 'accepted' ? '✅ Accepted' : '❌ Declined'}
-                      </div>
-                      <p className="text-white/40 text-xs mt-1">
-                        {new Date(request.created_at).toLocaleString([], {
-                          month: 'short',
-                          day: 'numeric',
-                          hour: '2-digit',
-                          minute: '2-digit'
-                        })}
-                      </p>
-                      {request.status === 'pending' && request.expires_at && (
-                        <p className="text-white/40 text-xs">
-                          Expires: {new Date(request.expires_at).toLocaleTimeString([], {
-                            hour: '2-digit',
-                            minute: '2-digit'
-                          })}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              ))}
+                  )
+                })}
+              </div>
             </div>
-          </div>
-        )}
+          )
+        })()}
 
         {/* Multi-Chat Interface */}
         {activeChats.length > 0 ? (
