@@ -29,6 +29,7 @@ export default function RandomChat({ user }) {
   const [showNewChatModal, setShowNewChatModal] = useState(false)
   const [selectedUser, setSelectedUser] = useState(null)
   const [requestMessage, setRequestMessage] = useState('')
+  const [searchQuery, setSearchQuery] = useState('')
   const [realtimeStatus, setRealtimeStatus] = useState('connecting') // 'connecting', 'connected', 'disconnected'
   const [recentStatusUpdate, setRecentStatusUpdate] = useState(null) // For showing real-time update notifications
   
@@ -797,6 +798,7 @@ export default function RandomChat({ user }) {
         setShowNewChatModal(false)
         setRequestMessage('')
         setSelectedUser(null)
+        setSearchQuery('')
         await Promise.all([
           loadAvailableUsers(),
           loadSentRequests()
@@ -1571,7 +1573,10 @@ export default function RandomChat({ user }) {
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-xl font-medium text-white">Find Chat Partner</h3>
               <button
-                onClick={() => setShowNewChatModal(false)}
+                onClick={() => {
+                  setShowNewChatModal(false)
+                  setSearchQuery('')
+                }}
                 className="text-white/60 hover:text-white"
               >
                 <X className="h-5 w-5" />
@@ -1641,43 +1646,134 @@ export default function RandomChat({ user }) {
                         💡 Click "Send Request" to invite someone to chat with you
                       </p>
                     </div>
+                    
+                    {/* Search Input */}
+                    <div className="mb-4">
+                      <div className="relative">
+                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-white/40" />
+                        <input
+                          type="text"
+                          value={searchQuery}
+                          onChange={(e) => setSearchQuery(e.target.value)}
+                          placeholder="Search partners by name..."
+                          className="w-full pl-10 pr-4 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/60 focus:outline-none focus:border-white/40 transition-colors"
+                        />
+                        {searchQuery && (
+                          <button
+                            onClick={() => setSearchQuery('')}
+                            className="absolute right-3 top-1/2 transform -translate-y-1/2 text-white/40 hover:text-white/60 transition-colors"
+                          >
+                            <X className="h-4 w-4" />
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                    
                     <div className="space-y-3 max-h-64 overflow-y-auto">
-                      {availableUsers.map((availableUser) => (
-                        <div
-                          key={availableUser.id}
-                          className="p-3 bg-white/5 rounded-xl border border-white/10"
-                        >
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center space-x-3">
-                              <div className="bg-gradient-to-r from-blue-400 to-purple-500 rounded-full w-10 h-10 flex items-center justify-center">
-                                <span className="text-white font-medium text-sm">
-                                  {availableUser.display_name.charAt(0).toUpperCase()}
-                                </span>
+                      {(() => {
+                        // Filter users based on search query
+                        const filteredUsers = availableUsers.filter(user => 
+                          user.display_name.toLowerCase().includes(searchQuery.toLowerCase().trim())
+                        )
+                        
+                        // Show empty state for search with no results
+                        if (filteredUsers.length === 0 && searchQuery.trim()) {
+                          return (
+                            <div className="text-center py-8">
+                              <Search className="h-12 w-12 text-white/30 mx-auto mb-3" />
+                              <p className="text-white/60 text-sm">No partners found matching "{searchQuery}"</p>
+                              <p className="text-white/40 text-xs mt-1">Try a different search term</p>
+                            </div>
+                          )
+                        }
+                        
+                        // Show count when searching
+                        if (searchQuery.trim() && filteredUsers.length > 0) {
+                          return (
+                            <>
+                              <div className="mb-2 px-1">
+                                <p className="text-white/60 text-xs">
+                                  Found {filteredUsers.length} partner{filteredUsers.length !== 1 ? 's' : ''} matching "{searchQuery}"
+                                </p>
                               </div>
-                              <div className="flex-1">
-                                <div className="flex items-center space-x-2">
-                                  <p className="text-white font-medium">{availableUser.display_name}</p>
-                                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                                    availableUser.gender === 'male' 
-                                      ? 'bg-blue-500/20 text-blue-400' 
-                                      : 'bg-pink-500/20 text-pink-400'
-                                  }`}>
-                                    {availableUser.gender === 'male' ? '♂' : '♀'}
+                              {filteredUsers.map((availableUser) => (
+                                <div
+                                  key={availableUser.id}
+                                  className="p-3 bg-white/5 rounded-xl border border-white/10"
+                                >
+                                  <div className="flex items-center justify-between">
+                                    <div className="flex items-center space-x-3">
+                                      <div className="bg-gradient-to-r from-blue-400 to-purple-500 rounded-full w-10 h-10 flex items-center justify-center">
+                                        <span className="text-white font-medium text-sm">
+                                          {availableUser.display_name.charAt(0).toUpperCase()}
+                                        </span>
+                                      </div>
+                                      <div className="flex-1">
+                                        <div className="flex items-center space-x-2">
+                                          <p className="text-white font-medium">{availableUser.display_name}</p>
+                                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                                            availableUser.gender === 'male' 
+                                              ? 'bg-blue-500/20 text-blue-400' 
+                                              : 'bg-pink-500/20 text-pink-400'
+                                          }`}>
+                                            {availableUser.gender === 'male' ? '♂' : '♀'}
+                                          </span>
+                                        </div>
+                                        <p className="text-white/60 text-sm">{availableUser.english_level} level</p>
+                                      </div>
+                                    </div>
+                                    <button
+                                      onClick={() => setSelectedUser(availableUser)}
+                                      className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center space-x-2"
+                                    >
+                                      <MessageCircle className="h-4 w-4" />
+                                      <span>Send Request</span>
+                                    </button>
+                                  </div>
+                                </div>
+                              ))}
+                            </>
+                          )
+                        }
+                        
+                        // Default case: show all users when no search
+                        return availableUsers.map((availableUser) => (
+                          <div
+                            key={availableUser.id}
+                            className="p-3 bg-white/5 rounded-xl border border-white/10"
+                          >
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center space-x-3">
+                                <div className="bg-gradient-to-r from-blue-400 to-purple-500 rounded-full w-10 h-10 flex items-center justify-center">
+                                  <span className="text-white font-medium text-sm">
+                                    {availableUser.display_name.charAt(0).toUpperCase()}
                                   </span>
                                 </div>
-                                <p className="text-white/60 text-sm">{availableUser.english_level} level</p>
+                                <div className="flex-1">
+                                  <div className="flex items-center space-x-2">
+                                    <p className="text-white font-medium">{availableUser.display_name}</p>
+                                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                                      availableUser.gender === 'male' 
+                                        ? 'bg-blue-500/20 text-blue-400' 
+                                        : 'bg-pink-500/20 text-pink-400'
+                                    }`}>
+                                      {availableUser.gender === 'male' ? '♂' : '♀'}
+                                    </span>
+                                  </div>
+                                  <p className="text-white/60 text-sm">{availableUser.english_level} level</p>
+                                </div>
                               </div>
+                              <button
+                                onClick={() => setSelectedUser(availableUser)}
+                                className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center space-x-2"
+                              >
+                                <MessageCircle className="h-4 w-4" />
+                                <span>Send Request</span>
+                              </button>
                             </div>
-                            <button
-                              onClick={() => setSelectedUser(availableUser)}
-                              className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center space-x-2"
-                            >
-                              <MessageCircle className="h-4 w-4" />
-                              <span>Send Request</span>
-                            </button>
                           </div>
-                        </div>
-                      ))}
+                        ))
+                      })()}
                     </div>
                   </div>
                 ) : (
