@@ -433,25 +433,25 @@ export default function Lessons({ user }) {
     
     return (
       <div className="space-y-8">
-        {/* 🌟 BEAUTIFUL LESSON HEADER */}
-        <div className={`relative overflow-hidden rounded-2xl bg-gradient-to-br ${theme.gradient} border border-${theme.color}-500/30 backdrop-blur-sm`}>
+        {/* 🌟 BEAUTIFUL LESSON HEADER - MOBILE RESPONSIVE */}
+        <div className={`relative overflow-hidden rounded-xl sm:rounded-2xl bg-gradient-to-br ${theme.gradient} border border-${theme.color}-500/30 backdrop-blur-sm`}>
           <div className={`absolute inset-0 bg-gradient-to-r from-${theme.color}-600/10 to-transparent`}></div>
-          <div className="relative p-8">
-            <div className="flex items-center gap-4 mb-4">
-              <div className={`flex-shrink-0 w-16 h-16 bg-gradient-to-br from-${theme.color}-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg`}>
-                <span className="text-3xl">{theme.icon}</span>
+          <div className="relative p-4 sm:p-6 lg:p-8">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 mb-4">
+              <div className={`flex-shrink-0 w-12 h-12 sm:w-16 sm:h-16 bg-gradient-to-br from-${theme.color}-500 to-purple-600 rounded-lg sm:rounded-xl flex items-center justify-center shadow-lg mx-auto sm:mx-0`}>
+                <span className="text-2xl sm:text-3xl">{theme.icon}</span>
               </div>
-              <div className="flex-1">
-                <h2 className="text-3xl font-bold text-white mb-2">{lesson.title}</h2>
-                <div className="flex items-center gap-3">
-                  <span className={`px-3 py-1 bg-${theme.color}-500/20 text-${theme.color}-300 rounded-full text-sm font-medium border border-${theme.color}-400/30`}>
-                    Grammar Lesson
+              <div className="flex-1 text-center sm:text-left">
+                <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold text-white mb-2">{lesson.title}</h2>
+                <div className="flex flex-wrap justify-center sm:justify-start items-center gap-2 sm:gap-3">
+                  <span className={`px-2 sm:px-3 py-1 bg-${theme.color}-500/20 text-${theme.color}-300 rounded-full text-xs sm:text-sm font-medium border border-${theme.color}-400/30`}>
+                    Grammar
                   </span>
-                  <span className="px-3 py-1 bg-green-500/20 text-green-300 rounded-full text-sm font-medium border border-green-400/30">
-                    Beginner Level
+                  <span className="px-2 sm:px-3 py-1 bg-green-500/20 text-green-300 rounded-full text-xs sm:text-sm font-medium border border-green-400/30">
+                    Beginner
                   </span>
                   {lesson.is_enhanced && (
-                    <span className="px-3 py-1 bg-purple-500/20 text-purple-300 rounded-full text-sm font-medium border border-purple-400/30">
+                    <span className="px-2 sm:px-3 py-1 bg-purple-500/20 text-purple-300 rounded-full text-xs sm:text-sm font-medium border border-purple-400/30">
                       ✨ Enhanced
                     </span>
                   )}
@@ -459,17 +459,20 @@ export default function Lessons({ user }) {
               </div>
             </div>
             
-            {/* 🇸🇴 LESSON INTRODUCTION WITH SOMALI SUPPORT */}
-            <div className="bg-white/5 backdrop-blur-sm rounded-xl p-6 border border-white/10">
-              <h4 className="text-xl font-semibold text-white mb-3 flex items-center gap-2">
-                <span className="text-2xl">💡</span> What You'll Learn
+            {/* 🇸🇴 LESSON INTRODUCTION WITH SOMALI SUPPORT - MOBILE RESPONSIVE */}
+            <div className="bg-white/5 backdrop-blur-sm rounded-lg sm:rounded-xl p-4 sm:p-6 border border-white/10">
+              <h4 className="text-lg sm:text-xl font-semibold text-white mb-3 flex items-center gap-2 justify-center sm:justify-start">
+                <span className="text-xl sm:text-2xl">💡</span> 
+                <span className="hidden sm:inline">What You'll Learn</span>
+                <span className="sm:hidden">Learn</span>
               </h4>
-              <p className="text-blue-100 text-lg leading-relaxed mb-4">{content.explanation}</p>
+              <p className="text-blue-100 text-sm sm:text-base lg:text-lg leading-relaxed mb-4 text-center sm:text-left">{content.explanation}</p>
               {showSomaliSupport && somalicontent.explanation && (
                 <div className="mt-4 pt-4 border-t border-green-400/20">
-                  <p className="text-green-300 text-lg leading-relaxed">
+                  <p className="text-green-300 text-sm sm:text-base lg:text-lg leading-relaxed text-center sm:text-left">
                     <span className="inline-flex items-center gap-2 font-semibold mb-2">
-                      🇸🇴 <span>Somali Translation:</span>
+                      🇸🇴 <span className="hidden sm:inline">Somali Translation:</span>
+                      <span className="sm:hidden">Somali:</span>
                     </span>
                     <br />
                     {somalicontent.explanation}
@@ -482,40 +485,41 @@ export default function Lessons({ user }) {
         
         {/* 🎨 ENHANCED CONTENT SECTIONS FOR ALL LESSON TYPES */}
         
-        {/* 📚 GRAMMAR RULES SECTION */}
+        {/* 📚 GRAMMAR RULES SECTION - MOBILE RESPONSIVE */}
         {content.rules && (
-          <div className={`bg-gradient-to-br from-${theme.color}-600/10 to-indigo-600/10 backdrop-blur-sm rounded-2xl border border-${theme.color}-500/30 overflow-hidden`}>
-            <div className={`bg-gradient-to-r from-${theme.color}-600/20 to-indigo-600/20 p-6 border-b border-${theme.color}-400/20`}>
-              <h3 className="text-2xl font-bold text-white flex items-center gap-3">
-                <div className={`w-8 h-8 bg-${theme.color}-500 rounded-lg flex items-center justify-center`}>
-                  <span className="text-lg">📋</span>
+          <div className={`bg-gradient-to-br from-${theme.color}-600/10 to-indigo-600/10 backdrop-blur-sm rounded-xl sm:rounded-2xl border border-${theme.color}-500/30 overflow-hidden`}>
+            <div className={`bg-gradient-to-r from-${theme.color}-600/20 to-indigo-600/20 p-4 sm:p-6 border-b border-${theme.color}-400/20`}>
+              <h3 className="text-lg sm:text-xl lg:text-2xl font-bold text-white flex items-center gap-2 sm:gap-3 justify-center sm:justify-start">
+                <div className={`w-6 h-6 sm:w-8 sm:h-8 bg-${theme.color}-500 rounded-lg flex items-center justify-center`}>
+                  <span className="text-sm sm:text-lg">📋</span>
                 </div>
-                Grammar Rules
+                <span className="hidden sm:inline">Grammar Rules</span>
+                <span className="sm:hidden">Rules</span>
               </h3>
-              <p className={`text-${theme.color}-200 mt-2`}>Learn the fundamental rules of {lesson.title.toLowerCase()}</p>
+              <p className={`text-${theme.color}-200 mt-2 text-sm sm:text-base text-center sm:text-left`}>Learn the fundamental rules of {lesson.title.toLowerCase()}</p>
             </div>
             
-            <div className="p-6 space-y-4">
+            <div className="p-4 sm:p-6 space-y-3 sm:space-y-4">
               {content.rules.map((rule, index) => (
-                <div key={index} className="group bg-white/5 backdrop-blur-sm rounded-xl p-4 border border-white/10 hover:border-indigo-400/30 transition-all duration-300 hover:bg-white/10">
-                  <div className="flex items-center justify-between">
+                <div key={index} className="group bg-white/5 backdrop-blur-sm rounded-lg sm:rounded-xl p-3 sm:p-4 border border-white/10 hover:border-indigo-400/30 transition-all duration-300 hover:bg-white/10">
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
                     <div className="flex-1">
-                      <p className="text-white font-medium text-lg">{rule}</p>
+                      <p className="text-white font-medium text-sm sm:text-base lg:text-lg text-center sm:text-left">{rule}</p>
                       {showSomaliSupport && somalicontent.rules_translation?.[index] && (
-                        <p className="text-green-300 text-sm mt-2 pl-4 border-l-2 border-green-400/30">
+                        <p className="text-green-300 text-xs sm:text-sm mt-2 pl-2 sm:pl-4 border-l-2 border-green-400/30 text-center sm:text-left">
                           🇸🇴 {somalicontent.rules_translation[index]}
                         </p>
                       )}
                     </div>
                     <button
                       onClick={() => playAudio(`rule-${index}`, rule)}
-                      className={`ml-4 p-3 rounded-xl transition-all duration-300 group-hover:scale-110 ${
+                      className={`p-2 sm:p-3 rounded-lg sm:rounded-xl transition-all duration-300 group-hover:scale-110 self-center sm:self-auto ${
                         audioPlaying === `rule-${index}`
                           ? `bg-${theme.color}-600 text-white shadow-lg shadow-${theme.color}-500/25`
                           : 'bg-gray-700 hover:bg-indigo-600 text-gray-300 hover:text-white'
                       }`}
                     >
-                      <span className="text-lg">🔊</span>
+                      <span className="text-sm sm:text-lg">🔊</span>
                     </button>
                   </div>
                 </div>
@@ -524,29 +528,30 @@ export default function Lessons({ user }) {
           </div>
         )}
 
-        {/* ❓ QUESTION WORDS SECTION */}
+        {/* ❓ QUESTION WORDS SECTION - MOBILE RESPONSIVE */}
         {content.question_words && (
-          <div className="bg-gradient-to-br from-cyan-600/10 to-blue-600/10 backdrop-blur-sm rounded-2xl border border-cyan-500/30 overflow-hidden">
-            <div className="bg-gradient-to-r from-cyan-600/20 to-blue-600/20 p-6 border-b border-cyan-400/20">
-              <h3 className="text-2xl font-bold text-white flex items-center gap-3">
-                <div className="w-8 h-8 bg-cyan-500 rounded-lg flex items-center justify-center">
-                  <span className="text-lg">❓</span>
+          <div className="bg-gradient-to-br from-cyan-600/10 to-blue-600/10 backdrop-blur-sm rounded-xl sm:rounded-2xl border border-cyan-500/30 overflow-hidden">
+            <div className="bg-gradient-to-r from-cyan-600/20 to-blue-600/20 p-4 sm:p-6 border-b border-cyan-400/20">
+              <h3 className="text-lg sm:text-xl lg:text-2xl font-bold text-white flex items-center gap-2 sm:gap-3 justify-center sm:justify-start">
+                <div className="w-6 h-6 sm:w-8 sm:h-8 bg-cyan-500 rounded-lg flex items-center justify-center">
+                  <span className="text-sm sm:text-lg">❓</span>
                 </div>
-                Question Words
+                <span className="hidden sm:inline">Question Words</span>
+                <span className="sm:hidden">Questions</span>
               </h3>
-              <p className="text-cyan-200 mt-2">Master the essential question words</p>
+              <p className="text-cyan-200 mt-2 text-sm sm:text-base text-center sm:text-left">Master the essential question words</p>
             </div>
             
-            <div className="p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="p-4 sm:p-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
               {content.question_words.map((word, index) => (
-                <div key={index} className="group bg-white/5 backdrop-blur-sm rounded-xl p-4 border border-white/10 hover:border-cyan-400/30 transition-all duration-300 hover:bg-white/10">
+                <div key={index} className="group bg-white/5 backdrop-blur-sm rounded-lg sm:rounded-xl p-3 sm:p-4 border border-white/10 hover:border-cyan-400/30 transition-all duration-300 hover:bg-white/10">
                   <div className="text-center">
-                    <h4 className="text-xl font-bold text-cyan-300 mb-2">{word.word}</h4>
-                    <p className="text-gray-300 text-sm mb-2">{word.use}</p>
-                    <p className="text-cyan-200 italic text-sm">"{word.example}"</p>
+                    <h4 className="text-lg sm:text-xl font-bold text-cyan-300 mb-2">{word.word}</h4>
+                    <p className="text-gray-300 text-xs sm:text-sm mb-2">{word.use}</p>
+                    <p className="text-cyan-200 italic text-xs sm:text-sm">"{word.example}"</p>
                     <button
                       onClick={() => playAudio(`question-${index}`, word.example)}
-                      className="mt-3 p-2 bg-cyan-600 hover:bg-cyan-700 text-white rounded-lg transition-colors"
+                      className="mt-2 sm:mt-3 p-2 bg-cyan-600 hover:bg-cyan-700 text-white rounded-lg transition-colors"
                     >
                       🔊
                     </button>
@@ -557,24 +562,25 @@ export default function Lessons({ user }) {
           </div>
         )}
 
-        {/* ⏰ TIME EXPRESSIONS SECTION */}
+        {/* ⏰ TIME EXPRESSIONS SECTION - MOBILE RESPONSIVE */}
         {content.time_expressions && (
-          <div className="bg-gradient-to-br from-amber-600/10 to-orange-600/10 backdrop-blur-sm rounded-2xl border border-amber-500/30 overflow-hidden">
-            <div className="bg-gradient-to-r from-amber-600/20 to-orange-600/20 p-6 border-b border-amber-400/20">
-              <h3 className="text-2xl font-bold text-white flex items-center gap-3">
-                <div className="w-8 h-8 bg-amber-500 rounded-lg flex items-center justify-center">
-                  <span className="text-lg">⏰</span>
+          <div className="bg-gradient-to-br from-amber-600/10 to-orange-600/10 backdrop-blur-sm rounded-xl sm:rounded-2xl border border-amber-500/30 overflow-hidden">
+            <div className="bg-gradient-to-r from-amber-600/20 to-orange-600/20 p-4 sm:p-6 border-b border-amber-400/20">
+              <h3 className="text-lg sm:text-xl lg:text-2xl font-bold text-white flex items-center gap-2 sm:gap-3 justify-center sm:justify-start">
+                <div className="w-6 h-6 sm:w-8 sm:h-8 bg-amber-500 rounded-lg flex items-center justify-center">
+                  <span className="text-sm sm:text-lg">⏰</span>
                 </div>
-                Time Expressions
+                <span className="hidden sm:inline">Time Expressions</span>
+                <span className="sm:hidden">Time</span>
               </h3>
-              <p className="text-amber-200 mt-2">Learn when to use different time expressions</p>
+              <p className="text-amber-200 mt-2 text-sm sm:text-base text-center sm:text-left">Learn when to use different time expressions</p>
             </div>
             
-            <div className="p-6">
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+            <div className="p-4 sm:p-6">
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-3">
                 {content.time_expressions.map((expression, index) => (
-                  <div key={index} className="bg-white/5 backdrop-blur-sm rounded-lg p-3 border border-white/10 text-center">
-                    <span className="text-amber-300 font-medium">{expression}</span>
+                  <div key={index} className="bg-white/5 backdrop-blur-sm rounded-lg p-2 sm:p-3 border border-white/10 text-center">
+                    <span className="text-amber-300 font-medium text-xs sm:text-sm">{expression}</span>
                   </div>
                 ))}
               </div>
@@ -582,34 +588,35 @@ export default function Lessons({ user }) {
           </div>
         )}
 
-        {/* 📝 PATTERNS SECTION */}
+        {/* 📝 PATTERNS SECTION - MOBILE RESPONSIVE */}
         {content.patterns && (
-          <div className="bg-gradient-to-br from-violet-600/10 to-purple-600/10 backdrop-blur-sm rounded-2xl border border-violet-500/30 overflow-hidden">
-            <div className="bg-gradient-to-r from-violet-600/20 to-purple-600/20 p-6 border-b border-violet-400/20">
-              <h3 className="text-2xl font-bold text-white flex items-center gap-3">
-                <div className="w-8 h-8 bg-violet-500 rounded-lg flex items-center justify-center">
-                  <span className="text-lg">📝</span>
+          <div className="bg-gradient-to-br from-violet-600/10 to-purple-600/10 backdrop-blur-sm rounded-xl sm:rounded-2xl border border-violet-500/30 overflow-hidden">
+            <div className="bg-gradient-to-r from-violet-600/20 to-purple-600/20 p-4 sm:p-6 border-b border-violet-400/20">
+              <h3 className="text-lg sm:text-xl lg:text-2xl font-bold text-white flex items-center gap-2 sm:gap-3 justify-center sm:justify-start">
+                <div className="w-6 h-6 sm:w-8 sm:h-8 bg-violet-500 rounded-lg flex items-center justify-center">
+                  <span className="text-sm sm:text-lg">📝</span>
                 </div>
-                Sentence Patterns
+                <span className="hidden sm:inline">Sentence Patterns</span>
+                <span className="sm:hidden">Patterns</span>
               </h3>
-              <p className="text-violet-200 mt-2">Master the sentence structures</p>
+              <p className="text-violet-200 mt-2 text-sm sm:text-base text-center sm:text-left">Master the sentence structures</p>
             </div>
             
-            <div className="p-6 space-y-4">
+            <div className="p-4 sm:p-6 space-y-3 sm:space-y-4">
               {content.patterns.map((pattern, index) => (
-                <div key={index} className="group bg-white/5 backdrop-blur-sm rounded-xl p-4 border border-white/10 hover:border-violet-400/30 transition-all duration-300 hover:bg-white/10">
-                  <div className="flex items-center justify-between">
+                <div key={index} className="group bg-white/5 backdrop-blur-sm rounded-lg sm:rounded-xl p-3 sm:p-4 border border-white/10 hover:border-violet-400/30 transition-all duration-300 hover:bg-white/10">
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
                     <div className="flex-1">
-                      <p className="text-white font-medium text-lg">{pattern}</p>
+                      <p className="text-white font-medium text-sm sm:text-base lg:text-lg text-center sm:text-left">{pattern}</p>
                       {showSomaliSupport && somalicontent.patterns_translation?.[index] && (
-                        <p className="text-green-300 text-sm mt-2 pl-4 border-l-2 border-green-400/30">
+                        <p className="text-green-300 text-xs sm:text-sm mt-2 pl-2 sm:pl-4 border-l-2 border-green-400/30 text-center sm:text-left">
                           🇸🇴 {somalicontent.patterns_translation[index]}
                         </p>
                       )}
                     </div>
                     <button
                       onClick={() => playAudio(`pattern-${index}`, pattern)}
-                      className="ml-4 p-3 bg-violet-600 hover:bg-violet-700 text-white rounded-xl transition-colors"
+                      className="p-2 sm:p-3 bg-violet-600 hover:bg-violet-700 text-white rounded-lg sm:rounded-xl transition-colors self-center sm:self-auto"
                     >
                       🔊
                     </button>
@@ -620,40 +627,41 @@ export default function Lessons({ user }) {
           </div>
         )}
 
-        {/* 💬 SOMALI VOCABULARY CARDS */}
+        {/* 💬 SOMALI VOCABULARY CARDS - MOBILE RESPONSIVE */}
         {showSomaliSupport && somalicontent.key_vocabulary && (
-          <div className="bg-gradient-to-br from-green-600/10 to-emerald-600/10 backdrop-blur-sm rounded-2xl border border-green-500/30 overflow-hidden">
-            <div className="bg-gradient-to-r from-green-600/20 to-emerald-600/20 p-6 border-b border-green-400/20">
-              <h3 className="text-2xl font-bold text-white flex items-center gap-3">
-                <div className="w-8 h-8 bg-green-500 rounded-lg flex items-center justify-center">
-                  <span className="text-lg">🇸🇴</span>
+          <div className="bg-gradient-to-br from-green-600/10 to-emerald-600/10 backdrop-blur-sm rounded-xl sm:rounded-2xl border border-green-500/30 overflow-hidden">
+            <div className="bg-gradient-to-r from-green-600/20 to-emerald-600/20 p-4 sm:p-6 border-b border-green-400/20">
+              <h3 className="text-lg sm:text-xl lg:text-2xl font-bold text-white flex items-center gap-2 sm:gap-3 justify-center sm:justify-start">
+                <div className="w-6 h-6 sm:w-8 sm:h-8 bg-green-500 rounded-lg flex items-center justify-center">
+                  <span className="text-sm sm:text-lg">🇸🇴</span>
                 </div>
-                Somali Vocabulary
+                <span className="hidden sm:inline">Somali Vocabulary</span>
+                <span className="sm:hidden">Somali</span>
               </h3>
-              <p className="text-green-200 mt-2">Connect English with your native language</p>
+              <p className="text-green-200 mt-2 text-sm sm:text-base text-center sm:text-left">Connect English with your native language</p>
             </div>
             
-            <div className="p-6 space-y-4">
+            <div className="p-4 sm:p-6 space-y-3 sm:space-y-4">
               {somalicontent.key_vocabulary.map((vocab, index) => (
-                <div key={index} className="group bg-white/5 backdrop-blur-sm rounded-xl p-4 border border-white/10 hover:border-green-400/30 transition-all duration-300 hover:bg-white/10">
-                  <div className="flex items-center justify-between">
+                <div key={index} className="group bg-white/5 backdrop-blur-sm rounded-lg sm:rounded-xl p-3 sm:p-4 border border-white/10 hover:border-green-400/30 transition-all duration-300 hover:bg-white/10">
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
                     <div className="flex-1">
-                      <div className="flex items-center gap-4 mb-2">
-                        <span className="text-2xl font-bold text-white">{vocab.english}</span>
-                        <span className="text-lg text-green-400">→</span>
-                        <span className="text-xl font-semibold text-green-300">{vocab.somali}</span>
+                      <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 mb-2 text-center sm:text-left">
+                        <span className="text-lg sm:text-2xl font-bold text-white">{vocab.english}</span>
+                        <span className="text-sm sm:text-lg text-green-400">→</span>
+                        <span className="text-base sm:text-xl font-semibold text-green-300">{vocab.somali}</span>
                       </div>
-                      <p className="text-gray-300 text-sm">{vocab.use}</p>
+                      <p className="text-gray-300 text-xs sm:text-sm text-center sm:text-left">{vocab.use}</p>
                     </div>
                     <button
                       onClick={() => playAudio(`vocab-${index}`, vocab.english)}
-                      className={`ml-4 p-3 rounded-xl transition-all duration-300 group-hover:scale-110 ${
+                      className={`p-2 sm:p-3 rounded-lg sm:rounded-xl transition-all duration-300 group-hover:scale-110 self-center sm:self-auto ${
                         audioPlaying === `vocab-${index}`
                           ? 'bg-green-600 text-white shadow-lg shadow-green-500/25'
                           : 'bg-gray-700 hover:bg-green-600 text-gray-300 hover:text-white'
                       }`}
                     >
-                      <span className="text-lg">🔊</span>
+                      <span className="text-sm sm:text-lg">🔊</span>
                     </button>
                   </div>
                 </div>
@@ -662,34 +670,35 @@ export default function Lessons({ user }) {
           </div>
         )}
 
-        {/* 📱 MODERN EXAMPLES SECTION */}
+        {/* 📱 MODERN EXAMPLES SECTION - MOBILE RESPONSIVE */}
         {content.modern_examples && (
-          <div className="bg-gradient-to-br from-emerald-600/10 to-teal-600/10 backdrop-blur-sm rounded-2xl border border-emerald-500/30 overflow-hidden">
-            <div className="bg-gradient-to-r from-emerald-600/20 to-teal-600/20 p-6 border-b border-emerald-400/20">
-              <h3 className="text-2xl font-bold text-white flex items-center gap-3">
-                <div className="w-8 h-8 bg-emerald-500 rounded-lg flex items-center justify-center">
-                  <span className="text-lg">📱</span>
+          <div className="bg-gradient-to-br from-emerald-600/10 to-teal-600/10 backdrop-blur-sm rounded-xl sm:rounded-2xl border border-emerald-500/30 overflow-hidden">
+            <div className="bg-gradient-to-r from-emerald-600/20 to-teal-600/20 p-4 sm:p-6 border-b border-emerald-400/20">
+              <h3 className="text-lg sm:text-xl lg:text-2xl font-bold text-white flex items-center gap-2 sm:gap-3 justify-center sm:justify-start">
+                <div className="w-6 h-6 sm:w-8 sm:h-8 bg-emerald-500 rounded-lg flex items-center justify-center">
+                  <span className="text-sm sm:text-lg">📱</span>
                 </div>
-                Modern Examples
+                <span className="hidden sm:inline">Modern Examples</span>
+                <span className="sm:hidden">Examples</span>
               </h3>
-              <p className="text-emerald-200 mt-2">Real-world examples for today's digital world</p>
+              <p className="text-emerald-200 mt-2 text-sm sm:text-base text-center sm:text-left">Real-world examples for today's digital world</p>
             </div>
             
-            <div className="p-6 space-y-4">
+            <div className="p-4 sm:p-6 space-y-3 sm:space-y-4">
               {content.modern_examples.map((example, index) => (
-                <div key={index} className="group bg-white/5 backdrop-blur-sm rounded-xl p-4 border border-white/10 hover:border-emerald-400/30 transition-all duration-300 hover:bg-white/10">
-                  <div className="flex items-center justify-between">
+                <div key={index} className="group bg-white/5 backdrop-blur-sm rounded-lg sm:rounded-xl p-3 sm:p-4 border border-white/10 hover:border-emerald-400/30 transition-all duration-300 hover:bg-white/10">
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
                     <div className="flex-1">
-                      <p className="text-white font-medium text-lg">{example}</p>
+                      <p className="text-white font-medium text-sm sm:text-base lg:text-lg text-center sm:text-left">{example}</p>
                       {showSomaliSupport && somalicontent.modern_examples_translation?.[index] && (
-                        <p className="text-green-300 text-sm mt-2 pl-4 border-l-2 border-green-400/30">
+                        <p className="text-green-300 text-xs sm:text-sm mt-2 pl-2 sm:pl-4 border-l-2 border-green-400/30 text-center sm:text-left">
                           🇸🇴 {somalicontent.modern_examples_translation[index]}
                         </p>
                       )}
                     </div>
                     <button
                       onClick={() => playAudio(`modern-${index}`, example)}
-                      className="ml-4 p-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl transition-colors"
+                      className="p-2 sm:p-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg sm:rounded-xl transition-colors self-center sm:self-auto"
                     >
                       🔊
                     </button>
@@ -700,34 +709,35 @@ export default function Lessons({ user }) {
           </div>
         )}
 
-        {/* ✏️ PRACTICE EXERCISES SECTION */}
+        {/* ✏️ PRACTICE EXERCISES SECTION - MOBILE RESPONSIVE */}
         {content.practice && (
-          <div className="bg-gradient-to-br from-orange-600/10 to-red-600/10 backdrop-blur-sm rounded-2xl border border-orange-500/30 overflow-hidden">
-            <div className="bg-gradient-to-r from-orange-600/20 to-red-600/20 p-6 border-b border-orange-400/20">
-              <h3 className="text-2xl font-bold text-white flex items-center gap-3">
-                <div className="w-8 h-8 bg-orange-500 rounded-lg flex items-center justify-center">
-                  <span className="text-lg">✏️</span>
+          <div className="bg-gradient-to-br from-orange-600/10 to-red-600/10 backdrop-blur-sm rounded-xl sm:rounded-2xl border border-orange-500/30 overflow-hidden">
+            <div className="bg-gradient-to-r from-orange-600/20 to-red-600/20 p-4 sm:p-6 border-b border-orange-400/20">
+              <h3 className="text-lg sm:text-xl lg:text-2xl font-bold text-white flex items-center gap-2 sm:gap-3 justify-center sm:justify-start">
+                <div className="w-6 h-6 sm:w-8 sm:h-8 bg-orange-500 rounded-lg flex items-center justify-center">
+                  <span className="text-sm sm:text-lg">✏️</span>
                 </div>
-                Practice Exercises
+                <span className="hidden sm:inline">Practice Exercises</span>
+                <span className="sm:hidden">Practice</span>
               </h3>
-              <p className="text-orange-200 mt-2">Test your understanding with these exercises</p>
+              <p className="text-orange-200 mt-2 text-sm sm:text-base text-center sm:text-left">Test your understanding with these exercises</p>
             </div>
             
-            <div className="p-6 space-y-4">
+            <div className="p-4 sm:p-6 space-y-3 sm:space-y-4">
               {content.practice.map((exercise, index) => (
-                <div key={index} className="group bg-white/5 backdrop-blur-sm rounded-xl p-4 border border-white/10 hover:border-orange-400/30 transition-all duration-300 hover:bg-white/10">
-                  <div className="flex items-center justify-between">
+                <div key={index} className="group bg-white/5 backdrop-blur-sm rounded-lg sm:rounded-xl p-3 sm:p-4 border border-white/10 hover:border-orange-400/30 transition-all duration-300 hover:bg-white/10">
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
                     <div className="flex-1">
-                      <p className="text-white font-medium text-lg">{exercise}</p>
+                      <p className="text-white font-medium text-sm sm:text-base lg:text-lg text-center sm:text-left">{exercise}</p>
                       {showSomaliSupport && somalicontent.practice_translation?.[index] && (
-                        <p className="text-green-300 text-sm mt-2 pl-4 border-l-2 border-green-400/30">
+                        <p className="text-green-300 text-xs sm:text-sm mt-2 pl-2 sm:pl-4 border-l-2 border-green-400/30 text-center sm:text-left">
                           🇸🇴 {somalicontent.practice_translation[index]}
                         </p>
                       )}
                     </div>
                     <button
                       onClick={() => playAudio(`practice-${index}`, exercise)}
-                      className="ml-4 p-3 bg-orange-600 hover:bg-orange-700 text-white rounded-xl transition-colors"
+                      className="p-2 sm:p-3 bg-orange-600 hover:bg-orange-700 text-white rounded-lg sm:rounded-xl transition-colors self-center sm:self-auto"
                     >
                       🔊
                     </button>
@@ -738,29 +748,29 @@ export default function Lessons({ user }) {
           </div>
         )}
           
-        {/* 🎛️ ENHANCED LESSON CONTROLS */}
-        <div className="bg-gradient-to-r from-purple-600/10 to-pink-600/10 backdrop-blur-sm rounded-2xl border border-purple-500/30 p-6">
-          <div className="flex flex-wrap gap-4 items-center justify-between">
-            <div className="flex items-center gap-4">
+        {/* 🎛️ ENHANCED LESSON CONTROLS - MOBILE RESPONSIVE */}
+        <div className="bg-gradient-to-r from-purple-600/10 to-pink-600/10 backdrop-blur-sm rounded-xl sm:rounded-2xl border border-purple-500/30 p-4 sm:p-6">
+          <div className="flex flex-col sm:flex-row gap-4 items-center justify-between">
+            <div className="flex flex-col sm:flex-row items-center gap-3 sm:gap-4 w-full sm:w-auto">
               {/* 🇸🇴 BEAUTIFUL SOMALI SUPPORT TOGGLE */}
               {user?.english_level === 'beginner' && lesson.content_somali && (
                 <button
                   onClick={() => setShowSomaliSupport(!showSomaliSupport)}
-                  className={`px-6 py-3 rounded-xl font-medium transition-all duration-300 flex items-center gap-3 ${
+                  className={`w-full sm:w-auto px-4 sm:px-6 py-2 sm:py-3 rounded-lg sm:rounded-xl font-medium transition-all duration-300 flex items-center justify-center gap-2 sm:gap-3 ${
                     showSomaliSupport 
                       ? 'bg-gradient-to-r from-green-600 to-emerald-600 text-white shadow-lg shadow-green-500/25 scale-105' 
                       : 'bg-gray-700 text-gray-300 hover:bg-gradient-to-r hover:from-green-600 hover:to-emerald-600 hover:text-white hover:shadow-lg hover:shadow-green-500/25'
                   }`}
                 >
-                  <span className="text-xl">🇸🇴</span>
-                  <span>{showSomaliSupport ? 'Hide' : 'Show'} Somali Help</span>
+                  <span className="text-lg sm:text-xl">🇸🇴</span>
+                  <span className="text-sm sm:text-base">{showSomaliSupport ? 'Hide' : 'Show'} Somali</span>
                 </button>
               )}
                   
               {/* Audio Speed Control */}
               {lesson.audio_content && (
-                <div className="flex items-center gap-2">
-                  <span className="text-sm text-gray-400">Speed:</span>
+                <div className="flex items-center gap-2 w-full sm:w-auto justify-center sm:justify-start">
+                  <span className="text-xs sm:text-sm text-gray-400">Speed:</span>
                   {[0.5, 1, 1.5, 2].map(speed => (
                     <button
                       key={speed}
@@ -778,47 +788,50 @@ export default function Lessons({ user }) {
               )}
             </div>
             
-            <div className="text-sm text-purple-400">
-              ✨ Enhanced Lesson with Audio & Quiz
+            <div className="text-xs sm:text-sm text-purple-400 text-center sm:text-right">
+              ✨ Enhanced Lesson
             </div>
           </div>
         </div>
           
-        {/* 🎯 BEAUTIFUL INTERACTIVE EXAMPLES WITH PHONETIC GUIDES */}
+        {/* 🎯 BEAUTIFUL INTERACTIVE EXAMPLES WITH PHONETIC GUIDES - MOBILE RESPONSIVE */}
         {content.examples && (
-          <div className="bg-gradient-to-br from-cyan-600/10 to-blue-600/10 backdrop-blur-sm rounded-2xl border border-cyan-500/30 overflow-hidden mb-8">
-            <div className="bg-gradient-to-r from-cyan-600/20 to-blue-600/20 p-6 border-b border-cyan-400/20">
-              <h3 className="text-2xl font-bold text-white flex items-center gap-3">
-                <div className="w-8 h-8 bg-cyan-500 rounded-lg flex items-center justify-center">
-                  <span className="text-lg">💬</span>
+          <div className="bg-gradient-to-br from-cyan-600/10 to-blue-600/10 backdrop-blur-sm rounded-xl sm:rounded-2xl border border-cyan-500/30 overflow-hidden mb-6 sm:mb-8">
+            <div className="bg-gradient-to-r from-cyan-600/20 to-blue-600/20 p-4 sm:p-6 border-b border-cyan-400/20">
+              <h3 className="text-lg sm:text-xl lg:text-2xl font-bold text-white flex items-center gap-2 sm:gap-3 justify-center sm:justify-start">
+                <div className="w-6 h-6 sm:w-8 sm:h-8 bg-cyan-500 rounded-lg flex items-center justify-center">
+                  <span className="text-sm sm:text-lg">💬</span>
                 </div>
-                Interactive Examples
+                <span className="hidden sm:inline">Interactive Examples</span>
+                <span className="sm:hidden">Examples</span>
               </h3>
-              <p className="text-cyan-200 mt-2">Practice with real-life sentences</p>
+              <p className="text-cyan-200 mt-2 text-sm sm:text-base text-center sm:text-left">Practice with real-life sentences</p>
             </div>
             
-            <div className="p-6 space-y-6">
+            <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
               {content.examples.map((example, idx) => (
-                <div key={idx} className="group bg-white/5 backdrop-blur-sm rounded-2xl p-6 border border-white/10 hover:border-cyan-400/30 transition-all duration-500 hover:bg-white/10">
+                <div key={idx} className="group bg-white/5 backdrop-blur-sm rounded-lg sm:rounded-2xl p-4 sm:p-6 border border-white/10 hover:border-cyan-400/30 transition-all duration-500 hover:bg-white/10">
                   {/* Example Sentence */}
-                  <div className="flex items-center justify-between mb-4">
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-4 mb-4">
                     <div className="flex-1">
-                      <p className="text-2xl font-semibold text-white mb-2">{example}</p>
+                      <p className="text-lg sm:text-xl lg:text-2xl font-semibold text-white mb-2 text-center sm:text-left">{example}</p>
                       
                       {/* 🗣️ SOMALI PHONETIC GUIDE */}
-                      <div className="bg-purple-600/10 rounded-xl p-4 border border-purple-400/20">
-                        <h6 className="text-purple-300 font-medium mb-2 flex items-center gap-2">
-                          <span>🗣️</span> Pronunciation Guide
+                      <div className="bg-purple-600/10 rounded-lg sm:rounded-xl p-3 sm:p-4 border border-purple-400/20">
+                        <h6 className="text-purple-300 font-medium mb-2 flex items-center gap-2 text-center sm:text-left">
+                          <span>🗣️</span> 
+                          <span className="hidden sm:inline">Pronunciation Guide</span>
+                          <span className="sm:hidden">Pronunciation</span>
                         </h6>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                           <div>
-                            <p className="text-gray-400 text-sm mb-1">English Phonetics:</p>
-                            <p className="text-blue-300 font-mono text-lg">/{example.toLowerCase().replace(/[.,!?]/g, '')}/</p>
+                            <p className="text-gray-400 text-xs sm:text-sm mb-1 text-center sm:text-left">English Phonetics:</p>
+                            <p className="text-blue-300 font-mono text-sm sm:text-lg text-center sm:text-left">/{example.toLowerCase().replace(/[.,!?]/g, '')}/</p>
                           </div>
                           {showSomaliSupport && (
                             <div>
-                              <p className="text-gray-400 text-sm mb-1">Somali Phonetics:</p>
-                              <p className="text-green-300 font-mono text-lg">
+                              <p className="text-gray-400 text-xs sm:text-sm mb-1 text-center sm:text-left">Somali Phonetics:</p>
+                              <p className="text-green-300 font-mono text-sm sm:text-lg text-center sm:text-left">
                                 {example.toLowerCase()
                                   .replace(/working/g, 'waarking')
                                   .replace(/friend/g, 'freend')
@@ -839,24 +852,27 @@ export default function Lessons({ user }) {
                     {/* Audio Button */}
                     <button
                       onClick={() => playAudio(`example-${idx}`, example)}
-                      className={`ml-6 p-4 rounded-2xl transition-all duration-300 group-hover:scale-110 ${
+                      className={`p-3 sm:p-4 rounded-lg sm:rounded-2xl transition-all duration-300 group-hover:scale-110 self-center sm:self-auto ${
                         audioPlaying === `example-${idx}`
                           ? 'bg-cyan-600 text-white shadow-2xl shadow-cyan-500/25 scale-110'
                           : 'bg-gray-700 hover:bg-cyan-600 text-gray-300 hover:text-white hover:shadow-xl hover:shadow-cyan-500/25'
                       }`}
                     >
-                      <span className="text-2xl">🔊</span>
+                      <span className="text-lg sm:text-2xl">🔊</span>
                     </button>
                   </div>
                   
                   {/* Somali Translation */}
                   {showSomaliSupport && somalicontent.examples_translation?.[idx] && (
-                    <div className="bg-green-600/10 rounded-xl p-4 border border-green-400/20">
-                      <div className="flex items-center gap-2 mb-2">
+                    <div className="bg-green-600/10 rounded-lg sm:rounded-xl p-3 sm:p-4 border border-green-400/20">
+                      <div className="flex items-center gap-2 mb-2 justify-center sm:justify-start">
                         <span className="text-green-400">🇸🇴</span>
-                        <h6 className="text-green-300 font-medium">Somali Translation:</h6>
+                        <h6 className="text-green-300 font-medium text-sm sm:text-base">
+                          <span className="hidden sm:inline">Somali Translation:</span>
+                          <span className="sm:hidden">Somali:</span>
+                        </h6>
                       </div>
-                      <p className="text-green-200 text-lg leading-relaxed">{somalicontent.examples_translation[idx]}</p>
+                      <p className="text-green-200 text-sm sm:text-base lg:text-lg leading-relaxed text-center sm:text-left">{somalicontent.examples_translation[idx]}</p>
                     </div>
                   )}
                 </div>
@@ -865,40 +881,41 @@ export default function Lessons({ user }) {
           </div>
         )}
 
-        {/* 📊 CONFIDENCE METER */}
-        <div className="bg-gradient-to-br from-violet-600/10 to-purple-600/10 backdrop-blur-sm rounded-2xl border border-violet-500/30 overflow-hidden mb-8">
-          <div className="bg-gradient-to-r from-violet-600/20 to-purple-600/20 p-6 border-b border-violet-400/20">
-            <h3 className="text-2xl font-bold text-white flex items-center gap-3">
-              <div className="w-8 h-8 bg-violet-500 rounded-lg flex items-center justify-center">
-                <span className="text-lg">📊</span>
+        {/* 📊 CONFIDENCE METER - MOBILE RESPONSIVE */}
+        <div className="bg-gradient-to-br from-violet-600/10 to-purple-600/10 backdrop-blur-sm rounded-xl sm:rounded-2xl border border-violet-500/30 overflow-hidden mb-6 sm:mb-8">
+          <div className="bg-gradient-to-r from-violet-600/20 to-purple-600/20 p-4 sm:p-6 border-b border-violet-400/20">
+            <h3 className="text-lg sm:text-xl lg:text-2xl font-bold text-white flex items-center gap-2 sm:gap-3 justify-center sm:justify-start">
+              <div className="w-6 h-6 sm:w-8 sm:h-8 bg-violet-500 rounded-lg flex items-center justify-center">
+                <span className="text-sm sm:text-lg">📊</span>
               </div>
-              Confidence Check
+              <span className="hidden sm:inline">Confidence Check</span>
+              <span className="sm:hidden">Confidence</span>
             </h3>
-            <p className="text-violet-200 mt-2">How confident do you feel about {lesson.title.toLowerCase()}?</p>
+            <p className="text-violet-200 mt-2 text-sm sm:text-base text-center sm:text-left">How confident do you feel about {lesson.title.toLowerCase()}?</p>
           </div>
           
-          <div className="p-6">
-            <div className="text-center mb-6">
-              <p className="text-white text-lg mb-4">Rate your confidence level:</p>
-              <div className="flex justify-center gap-3 mb-4">
+          <div className="p-4 sm:p-6">
+            <div className="text-center mb-4 sm:mb-6">
+              <p className="text-white text-sm sm:text-base lg:text-lg mb-3 sm:mb-4">Rate your confidence level:</p>
+              <div className="flex justify-center gap-2 sm:gap-3 mb-3 sm:mb-4">
                 {[1, 2, 3, 4, 5].map((level) => (
                   <button
                     key={level}
                     onClick={() => setConfidenceLevel(level)}
-                    className={`w-12 h-12 rounded-full transition-all duration-300 flex items-center justify-center ${
+                    className={`w-10 h-10 sm:w-12 sm:h-12 rounded-full transition-all duration-300 flex items-center justify-center ${
                       confidenceLevel >= level
                         ? 'bg-violet-600 text-white shadow-lg shadow-violet-500/25 scale-110'
                         : 'bg-gray-700 text-gray-400 hover:bg-violet-600 hover:text-white'
                     }`}
                   >
-                    ⭐
+                    <span className="text-sm sm:text-base">⭐</span>
                   </button>
                 ))}
               </div>
               
               {confidenceLevel > 0 && (
-                <div className="bg-white/5 backdrop-blur-sm rounded-xl p-4 border border-white/10">
-                  <p className="text-violet-300 text-lg">
+                <div className="bg-white/5 backdrop-blur-sm rounded-lg sm:rounded-xl p-3 sm:p-4 border border-white/10">
+                  <p className="text-violet-300 text-sm sm:text-base lg:text-lg text-center sm:text-left">
                     {confidenceLevel === 1 && "🌱 Just starting - that's perfectly normal!"}
                     {confidenceLevel === 2 && "🌿 Getting there - keep practicing!"}
                     {confidenceLevel === 3 && "🌸 Good progress - you're learning well!"}
@@ -906,7 +923,7 @@ export default function Lessons({ user }) {
                     {confidenceLevel === 5 && "🚀 Master level - ready for the quiz!"}
                   </p>
                   {showSomaliSupport && (
-                    <p className="text-green-300 text-sm mt-2">
+                    <p className="text-green-300 text-xs sm:text-sm mt-2 text-center sm:text-left">
                       🇸🇴 {confidenceLevel <= 2 ? "Waa caadi, sii wad!" : "Aad ayaad u fiican tahay!"}
                     </p>
                   )}
@@ -916,30 +933,33 @@ export default function Lessons({ user }) {
           </div>
         </div>
         
-        {/* 💬 CONVERSATION STARTERS */}
-        <div className="bg-gradient-to-br from-emerald-600/10 to-teal-600/10 backdrop-blur-sm rounded-2xl border border-emerald-500/30 overflow-hidden mb-8">
-          <div className="bg-gradient-to-r from-emerald-600/20 to-teal-600/20 p-6 border-b border-emerald-400/20">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 bg-emerald-500 rounded-lg flex items-center justify-center">
-                  <span className="text-lg">💬</span>
+        {/* 💬 CONVERSATION STARTERS - MOBILE RESPONSIVE */}
+        <div className="bg-gradient-to-br from-emerald-600/10 to-teal-600/10 backdrop-blur-sm rounded-xl sm:rounded-2xl border border-emerald-500/30 overflow-hidden mb-6 sm:mb-8">
+          <div className="bg-gradient-to-r from-emerald-600/20 to-teal-600/20 p-4 sm:p-6 border-b border-emerald-400/20">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-0">
+              <div className="flex items-center gap-2 sm:gap-3 justify-center sm:justify-start">
+                <div className="w-6 h-6 sm:w-8 sm:h-8 bg-emerald-500 rounded-lg flex items-center justify-center">
+                  <span className="text-sm sm:text-lg">💬</span>
                 </div>
-                <div>
-                  <h3 className="text-2xl font-bold text-white">Conversation Practice</h3>
-                  <p className="text-emerald-200 mt-1">Practice using {lesson.title.toLowerCase()} in real conversations</p>
+                <div className="text-center sm:text-left">
+                  <h3 className="text-lg sm:text-xl lg:text-2xl font-bold text-white">
+                    <span className="hidden sm:inline">Conversation Practice</span>
+                    <span className="sm:hidden">Practice</span>
+                  </h3>
+                  <p className="text-emerald-200 mt-1 text-xs sm:text-sm text-center sm:text-left">Practice using {lesson.title.toLowerCase()} in real conversations</p>
                 </div>
               </div>
               <button
                 onClick={() => setShowConversationStarters(!showConversationStarters)}
-                className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl transition-colors"
+                className="w-full sm:w-auto px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg sm:rounded-xl transition-colors text-sm sm:text-base"
               >
                 {showConversationStarters ? 'Hide' : 'Show'} Practice
               </button>
             </div>
           </div>
           
-          {showConversationStarters && (
-            <div className="p-6">
+                    {showConversationStarters && (
+            <div className="p-4 sm:p-6">
               {/* Dynamic Conversation Templates Based on Lesson Type */}
               {(() => {
                 // Generate conversation templates based on lesson type
@@ -1013,28 +1033,28 @@ export default function Lessons({ user }) {
                   ]
                 }
                 
-                                 return conversations.map((conversation, idx) => (
-                  <div key={idx} className={`mb-6 ${currentConversation === idx ? 'block' : 'hidden'}`}>
-                    <h4 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
+                return conversations.map((conversation, idx) => (
+                  <div key={idx} className={`mb-4 sm:mb-6 ${currentConversation === idx ? 'block' : 'hidden'}`}>
+                    <h4 className="text-lg sm:text-xl font-bold text-white mb-3 sm:mb-4 flex items-center gap-2 justify-center sm:justify-start">
                       <span className="text-emerald-400">📞</span>
                       {conversation.title}
                     </h4>
                     
-                    <div className="space-y-4">
+                    <div className="space-y-3 sm:space-y-4">
                       {conversation.english.map((line, lineIdx) => (
-                        <div key={lineIdx} className="bg-white/5 backdrop-blur-sm rounded-xl p-4 border border-white/10">
-                          <div className="flex items-center justify-between mb-2">
-                            <p className="text-emerald-300 text-lg font-medium">{line}</p>
+                        <div key={lineIdx} className="bg-white/5 backdrop-blur-sm rounded-lg sm:rounded-xl p-3 sm:p-4 border border-white/10">
+                          <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 mb-2">
+                            <p className="text-emerald-300 text-sm sm:text-base lg:text-lg font-medium text-center sm:text-left">{line}</p>
                             <button
                               onClick={() => playAudio(`conversation-${idx}-${lineIdx}`, line)}
-                              className="p-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition-colors"
+                              className="p-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition-colors self-center sm:self-auto"
                             >
                               🔊
                             </button>
                           </div>
                           
                           {showSomaliSupport && conversation.somali[lineIdx] && (
-                            <p className="text-green-300 text-sm pl-4 border-l-2 border-green-400/30">
+                            <p className="text-green-300 text-xs sm:text-sm pl-2 sm:pl-4 border-l-2 border-green-400/30 text-center sm:text-left">
                               🇸🇴 {conversation.somali[lineIdx]}
                             </p>
                           )}
@@ -1043,59 +1063,61 @@ export default function Lessons({ user }) {
                     </div>
                   </div>
                 ))
-               })()}
+              })()}
               
               {/* Navigation */}
-              <div className="flex justify-center gap-4 mt-6">
+              <div className="flex flex-col sm:flex-row justify-center gap-2 sm:gap-4 mt-4 sm:mt-6">
                 <button
                   onClick={() => setCurrentConversation(0)}
-                  className={`px-4 py-2 rounded-xl transition-colors ${
+                  className={`px-3 sm:px-4 py-2 rounded-lg sm:rounded-xl transition-colors text-sm sm:text-base ${
                     currentConversation === 0 ? 'bg-emerald-600 text-white' : 'bg-gray-700 text-gray-300 hover:bg-emerald-600'
                   }`}
                 >
-                  Meeting People
+                  <span className="hidden sm:inline">Meeting People</span>
+                  <span className="sm:hidden">Meeting</span>
                 </button>
                 <button
                   onClick={() => setCurrentConversation(1)}
-                  className={`px-4 py-2 rounded-xl transition-colors ${
+                  className={`px-3 sm:px-4 py-2 rounded-lg sm:rounded-xl transition-colors text-sm sm:text-base ${
                     currentConversation === 1 ? 'bg-emerald-600 text-white' : 'bg-gray-700 text-gray-300 hover:bg-emerald-600'
                   }`}
                 >
-                  Describing Yourself
+                  <span className="hidden sm:inline">Describing Yourself</span>
+                  <span className="sm:hidden">Describing</span>
                 </button>
               </div>
             </div>
           )}
         </div>
 
-        {/* 🎯 BEAUTIFUL ENHANCED QUIZ SECTION */}
+        {/* 🎯 BEAUTIFUL ENHANCED QUIZ SECTION - MOBILE RESPONSIVE */}
         {lesson.is_enhanced && lesson.quiz_questions && (
-          <div data-quiz-section className="mt-8 bg-gradient-to-br from-pink-600/10 via-purple-600/10 to-indigo-600/10 backdrop-blur-sm rounded-3xl border border-pink-500/30 overflow-hidden">
-            <div className="bg-gradient-to-r from-pink-600/20 to-purple-600/20 p-8 border-b border-pink-400/20">
-              <div className="flex items-center gap-4">
-                <div className="w-16 h-16 bg-gradient-to-br from-pink-500 to-purple-600 rounded-2xl flex items-center justify-center shadow-2xl shadow-purple-500/25">
-                  <span className="text-4xl">🎯</span>
+          <div data-quiz-section className="mt-6 sm:mt-8 bg-gradient-to-br from-pink-600/10 via-purple-600/10 to-indigo-600/10 backdrop-blur-sm rounded-2xl sm:rounded-3xl border border-pink-500/30 overflow-hidden">
+            <div className="bg-gradient-to-r from-pink-600/20 to-purple-600/20 p-4 sm:p-6 lg:p-8 border-b border-pink-400/20">
+              <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
+                <div className="w-12 h-12 sm:w-16 sm:h-16 bg-gradient-to-br from-pink-500 to-purple-600 rounded-xl sm:rounded-2xl flex items-center justify-center shadow-2xl shadow-purple-500/25 mx-auto sm:mx-0">
+                  <span className="text-2xl sm:text-4xl">🎯</span>
                 </div>
-                <div className="flex-1">
-                  <h2 className="text-3xl font-bold text-white mb-2">
+                <div className="flex-1 text-center sm:text-left">
+                  <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold text-white mb-2">
                     Mastery Quiz - 100% Required!
                   </h2>
-                  <p className="text-pink-200 text-lg">
+                  <p className="text-pink-200 text-sm sm:text-base lg:text-lg">
                     Prove your understanding to unlock lesson completion
                   </p>
                   {showSomaliSupport && (
-                    <p className="text-green-300 text-sm mt-2">
+                    <p className="text-green-300 text-xs sm:text-sm mt-2">
                       🇸🇴 Su'aalaha dhammee si aad u dhammeyso casharkan!
                     </p>
                   )}
                 </div>
-                <div className="text-right">
+                <div className="text-center sm:text-right">
                   {quizCompleted ? (
-                    <div className="px-4 py-2 bg-green-500/20 text-green-300 rounded-xl border border-green-400/30">
+                    <div className="px-3 sm:px-4 py-2 bg-green-500/20 text-green-300 rounded-lg sm:rounded-xl border border-green-400/30 text-sm sm:text-base">
                       ✅ Completed
                     </div>
                   ) : (
-                    <div className="px-4 py-2 bg-orange-500/20 text-orange-300 rounded-xl border border-orange-400/30">
+                    <div className="px-3 sm:px-4 py-2 bg-orange-500/20 text-orange-300 rounded-lg sm:rounded-xl border border-orange-400/30 text-sm sm:text-base">
                       ⏳ Required
                     </div>
                   )}
@@ -1103,167 +1125,167 @@ export default function Lessons({ user }) {
               </div>
             </div>
             
-            <div className="p-8">
-              {!currentQuiz ? (
-                <div className="text-center">
-                  <div className="mb-6">
-                    <div className="text-6xl mb-4">🎓</div>
-                                      <h3 className="text-2xl font-bold text-white mb-4">Ready for Your Quiz?</h3>
-                  <p className="text-gray-300 text-lg mb-2">
+                        <div className="p-4 sm:p-6 lg:p-8">
+            {!currentQuiz ? (
+              <div className="text-center">
+                  <div className="mb-4 sm:mb-6">
+                    <div className="text-4xl sm:text-6xl mb-3 sm:mb-4">🎓</div>
+                    <h3 className="text-lg sm:text-xl lg:text-2xl font-bold text-white mb-3 sm:mb-4">Ready for Your Quiz?</h3>
+                  <p className="text-gray-300 text-sm sm:text-base lg:text-lg mb-2">
                     Test your understanding of {lesson.title.toLowerCase()}
                   </p>
-                    <p className="text-pink-300 font-medium">
+                    <p className="text-pink-300 font-medium text-sm sm:text-base">
                       You need 100% correct answers to complete this lesson
                     </p>
                     {showSomaliSupport && (
-                      <p className="text-green-300 text-sm mt-3">
+                      <p className="text-green-300 text-xs sm:text-sm mt-2 sm:mt-3">
                         🇸🇴 Su'aal dhakhso ah ku dhammee si aad u tijaabisid waxaad baratay!
                       </p>
                     )}
                   </div>
                   
-                  <button
-                    onClick={() => startQuiz(lesson)}
-                    className="px-8 py-4 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white rounded-2xl font-bold text-lg transition-all duration-300 shadow-2xl shadow-purple-500/25 hover:scale-105"
-                  >
-                    <span className="flex items-center gap-3">
-                      <span className="text-2xl">🚀</span>
+                <button
+                  onClick={() => startQuiz(lesson)}
+                    className="w-full sm:w-auto px-6 sm:px-8 py-3 sm:py-4 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white rounded-xl sm:rounded-2xl font-bold text-sm sm:text-base lg:text-lg transition-all duration-300 shadow-2xl shadow-purple-500/25 hover:scale-105"
+                >
+                    <span className="flex items-center justify-center gap-2 sm:gap-3">
+                      <span className="text-lg sm:text-2xl">🚀</span>
                       <span>Start Quiz / Bilaab Su'aalaha</span>
                     </span>
-                  </button>
-                </div>
+                </button>
+              </div>
               ) : (
                 <div>
-                  {/* Beautiful Progress Header */}
-                  <div className="mb-8">
-                    <div className="flex justify-between items-center mb-4">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-purple-600 rounded-xl flex items-center justify-center">
-                          <span className="text-white font-bold">
+                  {/* Beautiful Progress Header - MOBILE RESPONSIVE */}
+                  <div className="mb-6 sm:mb-8">
+                    <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 sm:gap-4 mb-4">
+                      <div className="flex items-center gap-2 sm:gap-3 justify-center sm:justify-start">
+                        <div className="w-8 h-8 sm:w-10 sm:h-10 bg-purple-600 rounded-lg sm:rounded-xl flex items-center justify-center">
+                          <span className="text-white font-bold text-sm sm:text-base">
                             {currentQuiz.currentQuestion + 1}
                           </span>
                         </div>
-                        <div>
-                          <p className="text-white font-medium">
+                        <div className="text-center sm:text-left">
+                          <p className="text-white font-medium text-sm sm:text-base">
                             Question {currentQuiz.currentQuestion + 1} of {currentQuiz.questions.length}
                           </p>
-                          <p className="text-gray-400 text-sm">
+                          <p className="text-gray-400 text-xs sm:text-sm">
                             Need {currentQuiz.questions.length}/{currentQuiz.questions.length} correct
                           </p>
                         </div>
                       </div>
-                      <div className="text-right">
-                        <p className="text-green-400 font-bold text-lg">
+                      <div className="text-center sm:text-right">
+                        <p className="text-green-400 font-bold text-base sm:text-lg">
                           Score: {currentQuiz.score}/{currentQuiz.questions.length}
                         </p>
                       </div>
                     </div>
                     
                     {/* Beautiful Progress Bar */}
-                    <div className="w-full bg-gray-700/50 rounded-full h-3 overflow-hidden">
+                    <div className="w-full bg-gray-700/50 rounded-full h-2 sm:h-3 overflow-hidden">
                       <div 
-                        className="bg-gradient-to-r from-purple-600 to-pink-600 h-3 rounded-full transition-all duration-500 shadow-lg"
+                        className="bg-gradient-to-r from-purple-600 to-pink-600 h-2 sm:h-3 rounded-full transition-all duration-500 shadow-lg"
                         style={{width: `${((currentQuiz.currentQuestion + 1) / currentQuiz.questions.length) * 100}%`}}
                       ></div>
                     </div>
                   </div>
 
-                  {currentQuiz.currentQuestion < currentQuiz.questions.length && (
-                    <div>
+                                  {currentQuiz.currentQuestion < currentQuiz.questions.length && (
+                  <div>
                       {/* Question Card */}
-                      <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-6 border border-white/10 mb-8">
-                        <h3 className="text-2xl font-bold text-white mb-4">
-                          {currentQuiz.questions[currentQuiz.currentQuestion].question}
+                      <div className="bg-white/5 backdrop-blur-sm rounded-lg sm:rounded-2xl p-4 sm:p-6 border border-white/10 mb-6 sm:mb-8">
+                        <h3 className="text-lg sm:text-xl lg:text-2xl font-bold text-white mb-3 sm:mb-4 text-center sm:text-left">
+                        {currentQuiz.questions[currentQuiz.currentQuestion].question}
                         </h3>
-                        {showSomaliSupport && currentQuiz.questions[currentQuiz.currentQuestion].question_somali && (
-                          <div className="bg-green-600/10 rounded-xl p-4 border border-green-400/20">
-                            <p className="text-green-300 text-lg">
-                              🇸🇴 {currentQuiz.questions[currentQuiz.currentQuestion].question_somali}
-                            </p>
+                      {showSomaliSupport && currentQuiz.questions[currentQuiz.currentQuestion].question_somali && (
+                          <div className="bg-green-600/10 rounded-lg sm:rounded-xl p-3 sm:p-4 border border-green-400/20">
+                            <p className="text-green-300 text-sm sm:text-base lg:text-lg text-center sm:text-left">
+                          🇸🇴 {currentQuiz.questions[currentQuiz.currentQuestion].question_somali}
+                        </p>
                           </div>
-                        )}
-                      </div>
+                      )}
+                    </div>
 
                       {/* Answer Options */}
-                      <div className="space-y-4">
-                        {currentQuiz.questions[currentQuiz.currentQuestion].options.map((option, idx) => (
-                          <button
-                            key={idx}
-                            onClick={() => submitQuizAnswer(currentQuiz.currentQuestion, idx)}
-                            className="group w-full p-6 text-left bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl transition-all duration-300 hover:border-purple-400/50 hover:bg-white/10 hover:scale-[1.02] hover:shadow-lg hover:shadow-purple-500/10"
+                      <div className="space-y-3 sm:space-y-4">
+                      {currentQuiz.questions[currentQuiz.currentQuestion].options.map((option, idx) => (
+                        <button
+                          key={idx}
+                          onClick={() => submitQuizAnswer(currentQuiz.currentQuestion, idx)}
+                            className="group w-full p-4 sm:p-6 text-left bg-white/5 backdrop-blur-sm border border-white/10 rounded-lg sm:rounded-2xl transition-all duration-300 hover:border-purple-400/50 hover:bg-white/10 hover:scale-[1.02] hover:shadow-lg hover:shadow-purple-500/10"
                           >
-                            <div className="flex items-center gap-4">
-                              <div className="w-10 h-10 bg-purple-600/20 group-hover:bg-purple-600 rounded-xl flex items-center justify-center transition-colors">
-                                <span className="text-purple-300 group-hover:text-white font-bold text-lg">
+                            <div className="flex items-center gap-3 sm:gap-4">
+                              <div className="w-8 h-8 sm:w-10 sm:h-10 bg-purple-600/20 group-hover:bg-purple-600 rounded-lg sm:rounded-xl flex items-center justify-center transition-colors">
+                                <span className="text-purple-300 group-hover:text-white font-bold text-sm sm:text-lg">
                                   {String.fromCharCode(65 + idx)}
                                 </span>
                               </div>
-                              <span className="text-white text-lg font-medium group-hover:text-purple-200">
+                              <span className="text-white text-sm sm:text-base lg:text-lg font-medium group-hover:text-purple-200 text-center sm:text-left">
                                 {option}
                               </span>
                             </div>
-                          </button>
-                        ))}
-                      </div>
+                        </button>
+                      ))}
                     </div>
-                  )}
+                  </div>
+                )}
 
-                  {currentQuiz.currentQuestion >= currentQuiz.questions.length && (
-                    <div className="text-center">
-                      <div className="text-6xl mb-4">
-                        {quizCompleted ? '🎉' : '📚'}
-                      </div>
-                      <h3 className="text-2xl font-bold text-white mb-2">
+                                  {currentQuiz.currentQuestion >= currentQuiz.questions.length && (
+                  <div className="text-center">
+                      <div className="text-4xl sm:text-6xl mb-3 sm:mb-4">
+                      {quizCompleted ? '🎉' : '📚'}
+                    </div>
+                      <h3 className="text-lg sm:text-xl lg:text-2xl font-bold text-white mb-2">
                         {quizCompleted ? 'Perfect Score!' : 'Try Again!'}
                       </h3>
-                      <p className="text-gray-300 mb-4 text-lg">
-                        Final Score: {currentQuiz.score}/{currentQuiz.questions.length}
-                        {quizCompleted 
-                          ? <span className="text-green-400 block text-sm mt-2">🎉 Perfect score! You can complete the lesson!</span>
-                          : <span className="text-yellow-400 block text-sm mt-2">⚠️ Need {currentQuiz.questions.length}/{currentQuiz.questions.length} correct to pass</span>
-                        }
-                        {showSomaliSupport && (
-                          <span className="text-green-300 block text-sm mt-2">
-                            {quizCompleted 
-                              ? "🎉 Dhibac kaamil! Casharku dhammee kartaa!"
+                      <p className="text-gray-300 mb-3 sm:mb-4 text-sm sm:text-base lg:text-lg">
+                      Final Score: {currentQuiz.score}/{currentQuiz.questions.length}
+                      {quizCompleted 
+                          ? <span className="text-green-400 block text-xs sm:text-sm mt-2">🎉 Perfect score! You can complete the lesson!</span>
+                          : <span className="text-yellow-400 block text-xs sm:text-sm mt-2">⚠️ Need {currentQuiz.questions.length}/{currentQuiz.questions.length} correct to pass</span>
+                      }
+                      {showSomaliSupport && (
+                          <span className="text-green-300 block text-xs sm:text-sm mt-2">
+                          {quizCompleted 
+                            ? "🎉 Dhibac kaamil! Casharku dhammee kartaa!"
                               : `⚠️ Waxaad u baahan tahay ${currentQuiz.questions.length}/${currentQuiz.questions.length} sax si aad u gudbatid`
-                            }
-                          </span>
-                        )}
-                      </p>
-                      {!quizCompleted && (
-                        <button
-                          onClick={() => startQuiz(lesson)}
-                          className="px-8 py-4 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white rounded-2xl font-bold text-lg transition-all duration-300 shadow-2xl shadow-purple-500/25 hover:scale-105"
-                        >
-                          <span className="flex items-center gap-3">
-                            <span className="text-2xl">🔄</span>
+                          }
+                        </span>
+                      )}
+                    </p>
+                    {!quizCompleted && (
+                      <button
+                        onClick={() => startQuiz(lesson)}
+                          className="w-full sm:w-auto px-6 sm:px-8 py-3 sm:py-4 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white rounded-xl sm:rounded-2xl font-bold text-sm sm:text-base lg:text-lg transition-all duration-300 shadow-2xl shadow-purple-500/25 hover:scale-105"
+                      >
+                          <span className="flex items-center justify-center gap-2 sm:gap-3">
+                            <span className="text-lg sm:text-2xl">🔄</span>
                             <span>Try Again / Mar kale isku day</span>
                           </span>
-                        </button>
-                      )}
-                    </div>
-                  )}
+                      </button>
+                    )}
+                  </div>
+                )}
                 </div>
               )}
             </div>
           </div>
         )}
 
-        {/* Lesson Controls */}
-        <div className="flex flex-col sm:flex-row justify-between items-center pt-6 border-t border-gray-700 space-y-3 sm:space-y-0">
+        {/* Lesson Controls - MOBILE RESPONSIVE */}
+        <div className="flex flex-col sm:flex-row justify-between items-center pt-4 sm:pt-6 border-t border-gray-700 space-y-3 sm:space-y-0">
           <button
             onClick={() => setSelectedLesson(null)}
-            className="w-full sm:w-auto flex items-center justify-center space-x-2 px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors order-2 sm:order-1"
+            className="w-full sm:w-auto flex items-center justify-center space-x-2 px-3 sm:px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors order-2 sm:order-1 text-sm sm:text-base"
           >
             <ArrowLeft className="h-4 w-4" />
-            <span className="text-white text-sm sm:text-base">Back to Lessons</span>
+            <span className="text-white">Back to Lessons</span>
           </button>
           
           <button
             onClick={() => completeLesson(lesson)}
             disabled={loading || (lesson.is_enhanced && lesson.quiz_questions && !quizCompleted)}
-            className={`w-full sm:w-auto flex items-center justify-center space-x-2 px-6 py-3 rounded-xl font-medium transition-all duration-300 order-1 sm:order-2 ${
+            className={`w-full sm:w-auto flex items-center justify-center space-x-2 px-4 sm:px-6 py-2 sm:py-3 rounded-lg sm:rounded-xl font-medium transition-all duration-300 order-1 sm:order-2 text-sm sm:text-base ${
               lesson.is_enhanced && lesson.quiz_questions && !quizCompleted
                 ? 'bg-gray-600 text-gray-400 cursor-not-allowed border border-gray-500'
                 : loading
@@ -1273,17 +1295,17 @@ export default function Lessons({ user }) {
           >
             {loading ? (
               <>
-                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                <div className="animate-spin rounded-full h-4 w-4 sm:h-5 sm:w-5 border-b-2 border-white"></div>
                 <span>Completing...</span>
               </>
             ) : lesson.is_enhanced && lesson.quiz_questions && !quizCompleted ? (
               <>
-                <span className="text-xl">🔒</span>
+                <span className="text-lg sm:text-xl">🔒</span>
                 <span>Complete Quiz First</span>
               </>
             ) : (
               <>
-                <CheckCircle className="h-5 w-5" />
+                <CheckCircle className="h-4 w-4 sm:h-5 sm:w-5" />
                 <span>Complete Lesson</span>
               </>
             )}
