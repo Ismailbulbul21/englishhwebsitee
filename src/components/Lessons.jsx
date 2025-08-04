@@ -12,13 +12,12 @@ import {
   ChevronRight
 } from 'lucide-react'
 
-
 export default function Lessons({ user }) {
   const [lessons, setLessons] = useState([])
   const [selectedLesson, setSelectedLesson] = useState(null)
   const [userProgress, setUserProgress] = useState({})
   const [loading, setLoading] = useState(true)
-  const [activeTab, setActiveTab] = useState('grammar') // Default to grammar since phrases are temporarily hidden
+  const [activeTab, setActiveTab] = useState('grammar')
   const [completionMessage, setCompletionMessage] = useState('')
   
   // NEW: Enhanced lesson features
@@ -28,8 +27,11 @@ export default function Lessons({ user }) {
   const [quizCompleted, setQuizCompleted] = useState(false)
   const [audioPlaying, setAudioPlaying] = useState(null)
   const [playbackSpeed, setPlaybackSpeed] = useState(1)
-
-  // Move useEffect after function definitions
+  
+  // 🌟 NEW: Confidence Meter & Conversation Features
+  const [confidenceLevel, setConfidenceLevel] = useState(0)
+  const [showConversationStarters, setShowConversationStarters] = useState(false)
+  const [currentConversation, setCurrentConversation] = useState(0)
 
   // 🚀 PERFORMANCE FIX 1: Only fetch essential fields, not heavy JSONB content
   const fetchLessons = useCallback(async () => {
@@ -99,10 +101,75 @@ export default function Lessons({ user }) {
     }
   }, [user, fetchLessons, fetchUserProgress])
 
-  // NEW: Audio control functions with REAL speech
+  // 🚀 ENHANCED QUIZ LOGIC: Mandatory 100% completion with better feedback
+  const submitQuizAnswer = (questionIndex, selectedAnswer) => {
+    const newAnswers = { ...quizAnswers }
+    newAnswers[questionIndex] = selectedAnswer
+    setQuizAnswers(newAnswers)
+
+    const question = currentQuiz.questions[questionIndex]
+    const isCorrect = selectedAnswer === question.correct_answer
+    
+    // Enhanced feedback with visual indicators
+    const feedback = isCorrect 
+      ? `🎉 Excellent! ${question.explanation}` 
+      : `💡 Not quite right. ${question.explanation}`
+    
+    const somaliFeedback = showSomaliSupport 
+      ? (isCorrect 
+          ? `🎉 Fiican! ${question.explanation_somali || question.explanation}` 
+          : `💡 Ma aha kan saxda ah. ${question.explanation_somali || question.explanation}`)
+      : ''
+    
+    // Show beautiful feedback modal instead of alert
+    setCompletionMessage(`${feedback}${somaliFeedback ? `\n\n🇸🇴 ${somaliFeedback}` : ''}`)
+    
+    if (isCorrect) {
+      setCurrentQuiz(prev => ({ ...prev, score: prev.score + 1 }))
+    }
+
+    // Move to next question or complete quiz
+    setTimeout(() => {
+      setCompletionMessage('') // Clear feedback message
+      if (questionIndex < currentQuiz.questions.length - 1) {
+        setCurrentQuiz(prev => ({ ...prev, currentQuestion: questionIndex + 1 }))
+      } else {
+        // Quiz completed - MANDATORY 100% requirement
+        const finalScore = currentQuiz.score + (isCorrect ? 1 : 0)
+        const totalQuestions = currentQuiz.questions.length
+        const passed = finalScore === totalQuestions // Must get ALL correct
+        
+        if (passed) {
+          setQuizCompleted(true)
+          setCompletionMessage(`🎊 PERFECT SCORE! ${finalScore}/${totalQuestions} correct! You've mastered this lesson!`)
+        } else {
+          setQuizCompleted(false)
+          setCompletionMessage(`📚 Almost there! Score: ${finalScore}/${totalQuestions}. You need ${totalQuestions}/${totalQuestions} to complete the lesson. Don't give up!`)
+          // Reset quiz for retry after short delay
+          setTimeout(() => {
+            setCurrentQuiz(null)
+            setQuizAnswers({})
+            setCompletionMessage('')
+          }, 4000)
+        }
+      }
+    }, 2500) // Longer delay to read feedback
+  }
+
+  const startQuiz = (lesson) => {
+    if (lesson.quiz_questions) {
+      setCurrentQuiz({
+        questions: lesson.quiz_questions,
+        currentQuestion: 0,
+        score: 0
+      })
+      setQuizAnswers({})
+      setQuizCompleted(false)
+    }
+  }
+
   const playAudio = (audioId, text) => {
     if (audioPlaying === audioId) {
-      // Stop current audio
       if (window.speechSynthesis) {
         window.speechSynthesis.cancel()
       }
@@ -110,16 +177,14 @@ export default function Lessons({ user }) {
       return
     }
     
-    // Use Web Speech API for real audio
     if ('speechSynthesis' in window) {
-      window.speechSynthesis.cancel() // Stop any previous speech
+      window.speechSynthesis.cancel()
       
       const utterance = new SpeechSynthesisUtterance(text)
       utterance.rate = playbackSpeed
       utterance.pitch = 1
       utterance.volume = 1
       
-      // Try to use English voice
       const voices = window.speechSynthesis.getVoices()
       const englishVoice = voices.find(voice => voice.lang.startsWith('en'))
       if (englishVoice) {
@@ -145,71 +210,6 @@ export default function Lessons({ user }) {
       console.error('Speech synthesis not supported')
       alert('🔊 Audio not supported in this browser')
     }
-  }
-
-  const handleSpeedChange = (speed) => {
-    setPlaybackSpeed(speed)
-  }
-
-  // NEW: Quiz handling functions
-  const startQuiz = (lesson) => {
-    if (lesson.quiz_questions) {
-      setCurrentQuiz({
-        questions: lesson.quiz_questions,
-        currentQuestion: 0,
-        score: 0
-      })
-      setQuizAnswers({})
-      setQuizCompleted(false)
-    }
-  }
-
-  const submitQuizAnswer = (questionIndex, selectedAnswer) => {
-    const newAnswers = { ...quizAnswers }
-    newAnswers[questionIndex] = selectedAnswer
-    setQuizAnswers(newAnswers)
-
-    const question = currentQuiz.questions[questionIndex]
-    const isCorrect = selectedAnswer === question.correct_answer
-    
-    // Show immediate feedback
-    const feedback = isCorrect 
-      ? `✅ Correct! ${question.explanation}` 
-      : `❌ Wrong! ${question.explanation}`
-    
-    const somaliFeedback = showSomaliSupport 
-      ? (isCorrect 
-          ? `✅ Sax! ${question.explanation_somali || question.explanation}` 
-          : `❌ Qalad! ${question.explanation_somali || question.explanation}`)
-      : ''
-    
-    alert(`${feedback}\n\n${somaliFeedback}`)
-    
-    if (isCorrect) {
-      setCurrentQuiz(prev => ({ ...prev, score: prev.score + 1 }))
-    }
-
-    // Move to next question or complete quiz
-    setTimeout(() => {
-      if (questionIndex < currentQuiz.questions.length - 1) {
-        setCurrentQuiz(prev => ({ ...prev, currentQuestion: questionIndex + 1 }))
-      } else {
-        // Quiz completed
-        const finalScore = currentQuiz.score + (isCorrect ? 1 : 0)
-        const passed = finalScore === 3 // Need 3/3 to pass (perfect score)
-        
-        if (passed) {
-          setQuizCompleted(true)
-          setCompletionMessage(`🎉 Perfect! All 3 correct! You can complete the lesson now!`)
-        } else {
-          setCompletionMessage(`📚 You need 3/3 correct to pass. Score: ${finalScore}/3. Try again!`)
-          setTimeout(() => {
-            setCurrentQuiz(null)
-            setQuizAnswers({})
-          }, 3000)
-        }
-      }
-    }, 1500) // Small delay after feedback
   }
 
   const startLesson = async (lesson) => {
@@ -242,7 +242,7 @@ export default function Lessons({ user }) {
       } else {
         setShowSomaliSupport(false)
       }
-    
+      
       // NEW: Start quiz if lesson has enhanced features
       if (fullLesson.is_enhanced && fullLesson.quiz_questions) {
         setTimeout(() => {
@@ -282,9 +282,19 @@ export default function Lessons({ user }) {
     try {
       console.log('🎯 Starting lesson completion for:', lesson.title)
       
-      // NEW: Check if quiz is required and completed
+      // 🚀 ENHANCED: Strict quiz completion requirement
       if (lesson.is_enhanced && lesson.quiz_questions && !quizCompleted) {
-        alert('🚫 Please complete the quiz with 3/3 correct answers first!\n\n🇸🇴 Su\'aalaha dhammee oo 3/3 sax ka hel marka hore!')
+        const totalQuestions = lesson.quiz_questions.length
+        setCompletionMessage(`🚫 Quiz Mastery Required!\n\nYou must complete the quiz with ${totalQuestions}/${totalQuestions} correct answers to unlock this lesson completion.\n\n🇸🇴 Su'aalaha dhammee oo ${totalQuestions}/${totalQuestions} sax ka hel si aad u dhammeyso casharkan!`)
+        
+        // Scroll to quiz section to guide user
+        setTimeout(() => {
+          const quizElement = document.querySelector('[data-quiz-section]')
+          if (quizElement) {
+            quizElement.scrollIntoView({ behavior: 'smooth' })
+          }
+        }, 1000)
+        
         return
       }
       
@@ -340,15 +350,6 @@ export default function Lessons({ user }) {
     }
   }
 
-  const getLessonIcon = (type) => {
-    switch (type) {
-      case 'grammar': return '📝'
-      case 'vocabulary': return '📚'
-      case 'phrases': return '💬'
-      default: return '📖'
-    }
-  }
-
   const getLevelInfo = (level) => {
     switch (level) {
       case 'beginner':
@@ -382,1044 +383,875 @@ export default function Lessons({ user }) {
     }
   }
 
+  // 🎨 BEAUTIFUL ENHANCED LESSON CONTENT RENDERER
   const renderLessonContent = (lesson) => {
     const content = lesson.content
+    const somalicontent = lesson.content_somali || {}
     
-    // DEBUG: Log the lesson content to see what's causing the issue
-    console.log('🔍 Rendering lesson:', lesson.title, 'Content:', JSON.stringify(content, null, 2))
+    // 🎯 Get lesson-specific icon and color scheme
+    const getLessonTheme = (title) => {
+      if (title.includes('Present Tense') || title.includes('To Be')) {
+        return { icon: '📝', color: 'blue', gradient: 'from-blue-600/20 via-purple-600/20 to-indigo-600/20' }
+      } else if (title.includes('Questions')) {
+        return { icon: '❓', color: 'cyan', gradient: 'from-cyan-600/20 via-blue-600/20 to-indigo-600/20' }
+      } else if (title.includes('Present Simple')) {
+        return { icon: '⏰', color: 'green', gradient: 'from-green-600/20 via-emerald-600/20 to-teal-600/20' }
+      } else if (title.includes('Articles')) {
+        return { icon: '📰', color: 'orange', gradient: 'from-orange-600/20 via-red-600/20 to-pink-600/20' }
+      } else if (title.includes('Plurals')) {
+        return { icon: '🔢', color: 'purple', gradient: 'from-purple-600/20 via-violet-600/20 to-indigo-600/20' }
+      } else if (title.includes('Possessive')) {
+        return { icon: '👤', color: 'pink', gradient: 'from-pink-600/20 via-rose-600/20 to-red-600/20' }
+      } else if (title.includes('There is')) {
+        return { icon: '📍', color: 'indigo', gradient: 'from-indigo-600/20 via-blue-600/20 to-cyan-600/20' }
+      } else if (title.includes('Prepositions')) {
+        return { icon: '🗺️', color: 'teal', gradient: 'from-teal-600/20 via-cyan-600/20 to-blue-600/20' }
+      } else if (title.includes('Adjectives')) {
+        return { icon: '🎨', color: 'emerald', gradient: 'from-emerald-600/20 via-green-600/20 to-lime-600/20' }
+      } else if (title.includes('Comparatives')) {
+        return { icon: '📈', color: 'lime', gradient: 'from-lime-600/20 via-green-600/20 to-emerald-600/20' }
+      } else if (title.includes('Past Tense')) {
+        return { icon: '⏮️', color: 'amber', gradient: 'from-amber-600/20 via-orange-600/20 to-red-600/20' }
+      } else if (title.includes('Future') || title.includes('Going to')) {
+        return { icon: '⏭️', color: 'sky', gradient: 'from-sky-600/20 via-blue-600/20 to-indigo-600/20' }
+      } else if (title.includes('Can and Can\'t')) {
+        return { icon: '💪', color: 'violet', gradient: 'from-violet-600/20 via-purple-600/20 to-fuchsia-600/20' }
+      } else if (title.includes('Have and Have Got')) {
+        return { icon: '✅', color: 'fuchsia', gradient: 'from-fuchsia-600/20 via-pink-600/20 to-rose-600/20' }
+      } else if (title.includes('Countable')) {
+        return { icon: '🔢', color: 'slate', gradient: 'from-slate-600/20 via-gray-600/20 to-zinc-600/20' }
+      } else if (title.includes('Imperatives')) {
+        return { icon: '⚡', color: 'red', gradient: 'from-red-600/20 via-pink-600/20 to-rose-600/20' }
+      } else if (title.includes('Present Continuous')) {
+        return { icon: '🔄', color: 'blue', gradient: 'from-blue-600/20 via-indigo-600/20 to-purple-600/20' }
+      } else {
+        return { icon: '📝', color: 'blue', gradient: 'from-blue-600/20 via-purple-600/20 to-indigo-600/20' }
+      }
+    }
+    
+    const theme = getLessonTheme(lesson.title)
     
     return (
-      <div className="space-y-6">
-        <div className="prose prose-invert max-w-none">
-          <h3 className="text-2xl font-bold text-white mb-4">{lesson.title} - v3.0 FIXED</h3>
-          
-          {/* NEW: Enhanced lesson controls */}
-          {lesson.is_enhanced && (
-            <div className="mb-6 p-4 bg-gradient-to-r from-purple-500/10 to-blue-500/10 border border-purple-500/30 rounded-lg">
-              <div className="flex flex-wrap gap-4 items-center justify-between">
-                <div className="flex items-center gap-4">
-                  {/* Somali Support Toggle for Beginners */}
-                  {user?.english_level === 'beginner' && lesson.content_somali && (
-                    <button
-                      onClick={() => setShowSomaliSupport(!showSomaliSupport)}
-                      className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${
-                        showSomaliSupport 
-                          ? 'bg-green-600 text-white' 
-                          : 'bg-gray-600 text-gray-300 hover:bg-gray-500'
-                      }`}
-                    >
-                      🇸🇴 {showSomaliSupport ? 'Hide' : 'Show'} Somali Help
-                    </button>
+      <div className="space-y-8">
+        {/* 🌟 BEAUTIFUL LESSON HEADER */}
+        <div className={`relative overflow-hidden rounded-2xl bg-gradient-to-br ${theme.gradient} border border-${theme.color}-500/30 backdrop-blur-sm`}>
+          <div className={`absolute inset-0 bg-gradient-to-r from-${theme.color}-600/10 to-transparent`}></div>
+          <div className="relative p-8">
+            <div className="flex items-center gap-4 mb-4">
+              <div className={`flex-shrink-0 w-16 h-16 bg-gradient-to-br from-${theme.color}-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg`}>
+                <span className="text-3xl">{theme.icon}</span>
+              </div>
+              <div className="flex-1">
+                <h2 className="text-3xl font-bold text-white mb-2">{lesson.title}</h2>
+                <div className="flex items-center gap-3">
+                  <span className={`px-3 py-1 bg-${theme.color}-500/20 text-${theme.color}-300 rounded-full text-sm font-medium border border-${theme.color}-400/30`}>
+                    Grammar Lesson
+                  </span>
+                  <span className="px-3 py-1 bg-green-500/20 text-green-300 rounded-full text-sm font-medium border border-green-400/30">
+                    Beginner Level
+                  </span>
+                  {lesson.is_enhanced && (
+                    <span className="px-3 py-1 bg-purple-500/20 text-purple-300 rounded-full text-sm font-medium border border-purple-400/30">
+                      ✨ Enhanced
+                    </span>
                   )}
-                  
-                  {/* Audio Speed Control */}
-                  {lesson.audio_content && (
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm text-gray-400">Speed:</span>
-                      {[0.5, 1, 1.5, 2].map(speed => (
-                        <button
-                          key={speed}
-                          onClick={() => handleSpeedChange(speed)}
-                          className={`px-2 py-1 rounded text-xs font-medium transition-colors ${
-                            playbackSpeed === speed
-                              ? 'bg-blue-600 text-white'
-                              : 'bg-gray-600 text-gray-300 hover:bg-gray-500'
-                          }`}
-                        >
-                          {speed}x
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
-                
-                <div className="text-sm text-purple-400">
-                  ✨ Enhanced Lesson with Audio & Quiz
                 </div>
               </div>
             </div>
-          )}
-          
-          {/* Handle different content structures based on lesson type */}
-          {lesson.type === 'grammar' && (
-            <div>
-              {content.explanation && (
-                <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-4 mb-6">
-                  <div className="flex items-start justify-between mb-2">
-                    <h5 className="text-lg font-medium text-blue-400">Explanation</h5>
+            
+            {/* 🇸🇴 LESSON INTRODUCTION WITH SOMALI SUPPORT */}
+            <div className="bg-white/5 backdrop-blur-sm rounded-xl p-6 border border-white/10">
+              <h4 className="text-xl font-semibold text-white mb-3 flex items-center gap-2">
+                <span className="text-2xl">💡</span> What You'll Learn
+              </h4>
+              <p className="text-blue-100 text-lg leading-relaxed mb-4">{content.explanation}</p>
+              {showSomaliSupport && somalicontent.explanation && (
+                <div className="mt-4 pt-4 border-t border-green-400/20">
+                  <p className="text-green-300 text-lg leading-relaxed">
+                    <span className="inline-flex items-center gap-2 font-semibold mb-2">
+                      🇸🇴 <span>Somali Translation:</span>
+                    </span>
+                    <br />
+                    {somalicontent.explanation}
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+        
+        {/* 🎨 ENHANCED CONTENT SECTIONS FOR ALL LESSON TYPES */}
+        
+        {/* 📚 GRAMMAR RULES SECTION */}
+        {content.rules && (
+          <div className={`bg-gradient-to-br from-${theme.color}-600/10 to-indigo-600/10 backdrop-blur-sm rounded-2xl border border-${theme.color}-500/30 overflow-hidden`}>
+            <div className={`bg-gradient-to-r from-${theme.color}-600/20 to-indigo-600/20 p-6 border-b border-${theme.color}-400/20`}>
+              <h3 className="text-2xl font-bold text-white flex items-center gap-3">
+                <div className={`w-8 h-8 bg-${theme.color}-500 rounded-lg flex items-center justify-center`}>
+                  <span className="text-lg">📋</span>
+                </div>
+                Grammar Rules
+              </h3>
+              <p className={`text-${theme.color}-200 mt-2`}>Learn the fundamental rules of {lesson.title.toLowerCase()}</p>
+            </div>
+            
+            <div className="p-6 space-y-4">
+              {content.rules.map((rule, index) => (
+                <div key={index} className="group bg-white/5 backdrop-blur-sm rounded-xl p-4 border border-white/10 hover:border-indigo-400/30 transition-all duration-300 hover:bg-white/10">
+                  <div className="flex items-center justify-between">
+                    <div className="flex-1">
+                      <p className="text-white font-medium text-lg">{rule}</p>
+                      {showSomaliSupport && somalicontent.rules_translation?.[index] && (
+                        <p className="text-green-300 text-sm mt-2 pl-4 border-l-2 border-green-400/30">
+                          🇸🇴 {somalicontent.rules_translation[index]}
+                        </p>
+                      )}
+                    </div>
                     <button
-                      onClick={() => playAudio('explanation', content.explanation)}
-                      className={`p-2 rounded-md transition-colors ${
-                        audioPlaying === 'explanation'
-                          ? 'bg-blue-600 text-white'
-                          : 'bg-gray-600 hover:bg-gray-500 text-gray-300'
+                      onClick={() => playAudio(`rule-${index}`, rule)}
+                      className={`ml-4 p-3 rounded-xl transition-all duration-300 group-hover:scale-110 ${
+                        audioPlaying === `rule-${index}`
+                          ? `bg-${theme.color}-600 text-white shadow-lg shadow-${theme.color}-500/25`
+                          : 'bg-gray-700 hover:bg-indigo-600 text-gray-300 hover:text-white'
                       }`}
+                    >
+                      <span className="text-lg">🔊</span>
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* ❓ QUESTION WORDS SECTION */}
+        {content.question_words && (
+          <div className="bg-gradient-to-br from-cyan-600/10 to-blue-600/10 backdrop-blur-sm rounded-2xl border border-cyan-500/30 overflow-hidden">
+            <div className="bg-gradient-to-r from-cyan-600/20 to-blue-600/20 p-6 border-b border-cyan-400/20">
+              <h3 className="text-2xl font-bold text-white flex items-center gap-3">
+                <div className="w-8 h-8 bg-cyan-500 rounded-lg flex items-center justify-center">
+                  <span className="text-lg">❓</span>
+                </div>
+                Question Words
+              </h3>
+              <p className="text-cyan-200 mt-2">Master the essential question words</p>
+            </div>
+            
+            <div className="p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {content.question_words.map((word, index) => (
+                <div key={index} className="group bg-white/5 backdrop-blur-sm rounded-xl p-4 border border-white/10 hover:border-cyan-400/30 transition-all duration-300 hover:bg-white/10">
+                  <div className="text-center">
+                    <h4 className="text-xl font-bold text-cyan-300 mb-2">{word.word}</h4>
+                    <p className="text-gray-300 text-sm mb-2">{word.use}</p>
+                    <p className="text-cyan-200 italic text-sm">"{word.example}"</p>
+                    <button
+                      onClick={() => playAudio(`question-${index}`, word.example)}
+                      className="mt-3 p-2 bg-cyan-600 hover:bg-cyan-700 text-white rounded-lg transition-colors"
                     >
                       🔊
                     </button>
                   </div>
-                  <p className="text-blue-100">{content.explanation}</p>
-                  
-                  {/* NEW: Somali translation for beginners */}
-                  {showSomaliSupport && lesson.content_somali?.explanation && (
-                    <div className="mt-4 pt-4 border-t border-blue-400/20">
-                      <p className="text-green-300 text-sm">
-                        🇸🇴 <strong>Somali:</strong> {lesson.content_somali.explanation}
-                      </p>
-                    </div>
-                  )}
                 </div>
-              )}
-
-              {content.rules && (
-                <div className="mb-8">
-                  <h4 className="text-xl font-semibold text-white mb-3">Grammar Rules</h4>
-                  <ul className="space-y-2">
-                    {content.rules.map((rule, idx) => (
-                      <li key={idx} className="text-gray-300">• {rule}</li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-
-              {content.examples && (
-                <div className="bg-gray-800 rounded-lg p-4 mb-4">
-                  <h5 className="text-lg font-medium text-white mb-2">Examples:</h5>
-                  <ul className="space-y-3">
-                    {content.examples.map((example, idx) => (
-                      <li key={idx} className="flex items-center justify-between">
-                        <span className="text-blue-400">{example}</span>
-                        <button
-                          onClick={() => playAudio(`example-${idx}`, example)}
-                          className={`ml-2 p-1 rounded transition-colors ${
-                            audioPlaying === `example-${idx}`
-                              ? 'bg-blue-600 text-white'
-                              : 'bg-gray-600 hover:bg-gray-500 text-gray-300'
-                          }`}
-                        >
-                          🔊
-                        </button>
-                      </li>
-                    ))}
-                  </ul>
-                  
-                  {/* NEW: Somali translations for examples */}
-                  {showSomaliSupport && lesson.content_somali?.examples_translation && (
-                    <div className="mt-4 pt-4 border-t border-gray-600">
-                      <h6 className="text-sm font-medium text-green-400 mb-2">🇸🇴 Somali Translations:</h6>
-                      <ul className="space-y-2">
-                        {lesson.content_somali.examples_translation.map((translation, idx) => (
-                          <li key={idx} className="text-green-300 text-sm">• {translation}</li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {content.practice && (
-                <div className="bg-green-500/10 border border-green-500/30 rounded-lg p-4">
-                  <h5 className="text-lg font-medium text-green-400 mb-2">Practice:</h5>
-                  <ul className="space-y-2">
-                    {content.practice.map((practice, idx) => (
-                      <li key={idx} className="text-gray-300">{practice}</li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-
-              {content.patterns && (
-                <div className="bg-purple-500/10 border border-purple-500/30 rounded-lg p-4 mb-4">
-                  <h5 className="text-lg font-medium text-purple-400 mb-2">Patterns:</h5>
-                  <ul className="space-y-2">
-                    {content.patterns.map((pattern, idx) => (
-                      <li key={idx} className="text-purple-300">• {pattern}</li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-
-              {content.question_words && (
-                <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-4 mb-4">
-                  <h5 className="text-lg font-medium text-yellow-400 mb-2">Question Words:</h5>
-                  <div className="grid gap-3">
-                    {content.question_words.map((word, idx) => (
-                      <div key={idx} className="bg-gray-800 rounded-lg p-3">
-                        <h6 className="text-white font-medium">{word.word}</h6>
-                        <p className="text-gray-400 text-sm">{word.use}</p>
-                        <p className="text-yellow-400 italic text-sm">"{word.example}"</p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {content.time_expressions && lesson.type === 'grammar' && (
-                <div className="bg-cyan-500/10 border border-cyan-500/30 rounded-lg p-4">
-                  <h5 className="text-lg font-medium text-cyan-400 mb-2">Time Expressions:</h5>
-                  <ul className="space-y-2">
-                    {content.time_expressions.map((expression, idx) => (
-                      <li key={idx} className="text-cyan-300">• {expression}</li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-
-              {content.structure && (
-                <div className="bg-orange-500/10 border border-orange-500/30 rounded-lg p-4 mb-4">
-                  <h5 className="text-lg font-medium text-orange-400 mb-2">Structure:</h5>
-                  <p className="text-orange-300 font-mono">{content.structure}</p>
-                </div>
-              )}
-
-              {content.vs_past_simple && (
-                <div className="bg-pink-500/10 border border-pink-500/30 rounded-lg p-4 mb-4">
-                  <h5 className="text-lg font-medium text-pink-400 mb-2">Comparison:</h5>
-                  <p className="text-pink-300">{content.vs_past_simple}</p>
-                </div>
-              )}
-
-              {content.irregular_note && (
-                <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-4 mb-4">
-                  <h5 className="text-lg font-medium text-red-400 mb-2">Important Note:</h5>
-                  <p className="text-red-300">{content.irregular_note}</p>
-                </div>
-              )}
-
-              {content.will_uses && (
-                <div className="mb-8">
-                  <h4 className="text-xl font-semibold text-white mb-3">Using "Will"</h4>
-                  <div className="bg-gray-800 rounded-lg p-4">
-                    <ul className="space-y-2">
-                      {content.will_uses.map((use, idx) => (
-                        <li key={idx} className="text-blue-400">• {use}</li>
-                      ))}
-                    </ul>
-                  </div>
-                </div>
-              )}
-
-              {content.going_to_uses && (
-                <div className="mb-8">
-                  <h4 className="text-xl font-semibold text-white mb-3">Using "Going to"</h4>
-                  <div className="bg-gray-800 rounded-lg p-4">
-                    <ul className="space-y-2">
-                      {content.going_to_uses.map((use, idx) => (
-                        <li key={idx} className="text-green-400">• {use}</li>
-                      ))}
-                    </ul>
-                  </div>
-                </div>
-              )}
+              ))}
             </div>
-          )}
+          </div>
+        )}
 
-          {lesson.type === 'vocabulary' && (
-            <div>
-              {content.topic && (
-                <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-4 mb-6">
-                  <p className="text-blue-100">{content.topic}</p>
+        {/* ⏰ TIME EXPRESSIONS SECTION */}
+        {content.time_expressions && (
+          <div className="bg-gradient-to-br from-amber-600/10 to-orange-600/10 backdrop-blur-sm rounded-2xl border border-amber-500/30 overflow-hidden">
+            <div className="bg-gradient-to-r from-amber-600/20 to-orange-600/20 p-6 border-b border-amber-400/20">
+              <h3 className="text-2xl font-bold text-white flex items-center gap-3">
+                <div className="w-8 h-8 bg-amber-500 rounded-lg flex items-center justify-center">
+                  <span className="text-lg">⏰</span>
                 </div>
-              )}
+                Time Expressions
+              </h3>
+              <p className="text-amber-200 mt-2">Learn when to use different time expressions</p>
+            </div>
+            
+            <div className="p-6">
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                {content.time_expressions.map((expression, index) => (
+                  <div key={index} className="bg-white/5 backdrop-blur-sm rounded-lg p-3 border border-white/10 text-center">
+                    <span className="text-amber-300 font-medium">{expression}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
 
-              {content.vocabulary && (
-                <div className="mb-8">
-                  <h4 className="text-xl font-semibold text-white mb-3">Vocabulary</h4>
-                  <div className="grid gap-4">
-                    {content.vocabulary.map((word, idx) => (
-                      <div key={idx} className="bg-gray-800 rounded-lg p-4">
-                        <h5 className="text-lg font-medium text-white">{word.word}</h5>
-                        <p className="text-gray-400 text-sm">{word.meaning}</p>
-                        <p className="text-blue-400 italic mt-2">"{word.example}"</p>
-                      </div>
-                    ))}
+        {/* 📝 PATTERNS SECTION */}
+        {content.patterns && (
+          <div className="bg-gradient-to-br from-violet-600/10 to-purple-600/10 backdrop-blur-sm rounded-2xl border border-violet-500/30 overflow-hidden">
+            <div className="bg-gradient-to-r from-violet-600/20 to-purple-600/20 p-6 border-b border-violet-400/20">
+              <h3 className="text-2xl font-bold text-white flex items-center gap-3">
+                <div className="w-8 h-8 bg-violet-500 rounded-lg flex items-center justify-center">
+                  <span className="text-lg">📝</span>
+                </div>
+                Sentence Patterns
+              </h3>
+              <p className="text-violet-200 mt-2">Master the sentence structures</p>
+            </div>
+            
+            <div className="p-6 space-y-4">
+              {content.patterns.map((pattern, index) => (
+                <div key={index} className="group bg-white/5 backdrop-blur-sm rounded-xl p-4 border border-white/10 hover:border-violet-400/30 transition-all duration-300 hover:bg-white/10">
+                  <div className="flex items-center justify-between">
+                    <div className="flex-1">
+                      <p className="text-white font-medium text-lg">{pattern}</p>
+                      {showSomaliSupport && somalicontent.patterns_translation?.[index] && (
+                        <p className="text-green-300 text-sm mt-2 pl-4 border-l-2 border-green-400/30">
+                          🇸🇴 {somalicontent.patterns_translation[index]}
+                        </p>
+                      )}
+                    </div>
+                    <button
+                      onClick={() => playAudio(`pattern-${index}`, pattern)}
+                      className="ml-4 p-3 bg-violet-600 hover:bg-violet-700 text-white rounded-xl transition-colors"
+                    >
+                      🔊
+                    </button>
                   </div>
                 </div>
-              )}
+              ))}
+            </div>
+          </div>
+        )}
 
-              {content.dialogues && (
-                <div className="bg-green-500/10 border border-green-500/30 rounded-lg p-4">
-                  <h5 className="text-lg font-medium text-green-400 mb-2">Sample Dialogues:</h5>
-                  {content.dialogues.map((dialogue, idx) => (
-                    <div key={idx} className="mb-4">
-                      <p className="text-gray-300"><strong>Person 1:</strong> {dialogue.person1}</p>
-                      <p className="text-gray-300"><strong>Person 2:</strong> {dialogue.person2}</p>
+        {/* 💬 SOMALI VOCABULARY CARDS */}
+        {showSomaliSupport && somalicontent.key_vocabulary && (
+          <div className="bg-gradient-to-br from-green-600/10 to-emerald-600/10 backdrop-blur-sm rounded-2xl border border-green-500/30 overflow-hidden">
+            <div className="bg-gradient-to-r from-green-600/20 to-emerald-600/20 p-6 border-b border-green-400/20">
+              <h3 className="text-2xl font-bold text-white flex items-center gap-3">
+                <div className="w-8 h-8 bg-green-500 rounded-lg flex items-center justify-center">
+                  <span className="text-lg">🇸🇴</span>
+                </div>
+                Somali Vocabulary
+              </h3>
+              <p className="text-green-200 mt-2">Connect English with your native language</p>
+            </div>
+            
+            <div className="p-6 space-y-4">
+              {somalicontent.key_vocabulary.map((vocab, index) => (
+                <div key={index} className="group bg-white/5 backdrop-blur-sm rounded-xl p-4 border border-white/10 hover:border-green-400/30 transition-all duration-300 hover:bg-white/10">
+                  <div className="flex items-center justify-between">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-4 mb-2">
+                        <span className="text-2xl font-bold text-white">{vocab.english}</span>
+                        <span className="text-lg text-green-400">→</span>
+                        <span className="text-xl font-semibold text-green-300">{vocab.somali}</span>
+                      </div>
+                      <p className="text-gray-300 text-sm">{vocab.use}</p>
                     </div>
+                    <button
+                      onClick={() => playAudio(`vocab-${index}`, vocab.english)}
+                      className={`ml-4 p-3 rounded-xl transition-all duration-300 group-hover:scale-110 ${
+                        audioPlaying === `vocab-${index}`
+                          ? 'bg-green-600 text-white shadow-lg shadow-green-500/25'
+                          : 'bg-gray-700 hover:bg-green-600 text-gray-300 hover:text-white'
+                      }`}
+                    >
+                      <span className="text-lg">🔊</span>
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* 📱 MODERN EXAMPLES SECTION */}
+        {content.modern_examples && (
+          <div className="bg-gradient-to-br from-emerald-600/10 to-teal-600/10 backdrop-blur-sm rounded-2xl border border-emerald-500/30 overflow-hidden">
+            <div className="bg-gradient-to-r from-emerald-600/20 to-teal-600/20 p-6 border-b border-emerald-400/20">
+              <h3 className="text-2xl font-bold text-white flex items-center gap-3">
+                <div className="w-8 h-8 bg-emerald-500 rounded-lg flex items-center justify-center">
+                  <span className="text-lg">📱</span>
+                </div>
+                Modern Examples
+              </h3>
+              <p className="text-emerald-200 mt-2">Real-world examples for today's digital world</p>
+            </div>
+            
+            <div className="p-6 space-y-4">
+              {content.modern_examples.map((example, index) => (
+                <div key={index} className="group bg-white/5 backdrop-blur-sm rounded-xl p-4 border border-white/10 hover:border-emerald-400/30 transition-all duration-300 hover:bg-white/10">
+                  <div className="flex items-center justify-between">
+                    <div className="flex-1">
+                      <p className="text-white font-medium text-lg">{example}</p>
+                      {showSomaliSupport && somalicontent.modern_examples_translation?.[index] && (
+                        <p className="text-green-300 text-sm mt-2 pl-4 border-l-2 border-green-400/30">
+                          🇸🇴 {somalicontent.modern_examples_translation[index]}
+                        </p>
+                      )}
+                    </div>
+                    <button
+                      onClick={() => playAudio(`modern-${index}`, example)}
+                      className="ml-4 p-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl transition-colors"
+                    >
+                      🔊
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* ✏️ PRACTICE EXERCISES SECTION */}
+        {content.practice && (
+          <div className="bg-gradient-to-br from-orange-600/10 to-red-600/10 backdrop-blur-sm rounded-2xl border border-orange-500/30 overflow-hidden">
+            <div className="bg-gradient-to-r from-orange-600/20 to-red-600/20 p-6 border-b border-orange-400/20">
+              <h3 className="text-2xl font-bold text-white flex items-center gap-3">
+                <div className="w-8 h-8 bg-orange-500 rounded-lg flex items-center justify-center">
+                  <span className="text-lg">✏️</span>
+                </div>
+                Practice Exercises
+              </h3>
+              <p className="text-orange-200 mt-2">Test your understanding with these exercises</p>
+            </div>
+            
+            <div className="p-6 space-y-4">
+              {content.practice.map((exercise, index) => (
+                <div key={index} className="group bg-white/5 backdrop-blur-sm rounded-xl p-4 border border-white/10 hover:border-orange-400/30 transition-all duration-300 hover:bg-white/10">
+                  <div className="flex items-center justify-between">
+                    <div className="flex-1">
+                      <p className="text-white font-medium text-lg">{exercise}</p>
+                      {showSomaliSupport && somalicontent.practice_translation?.[index] && (
+                        <p className="text-green-300 text-sm mt-2 pl-4 border-l-2 border-green-400/30">
+                          🇸🇴 {somalicontent.practice_translation[index]}
+                        </p>
+                      )}
+                    </div>
+                    <button
+                      onClick={() => playAudio(`practice-${index}`, exercise)}
+                      className="ml-4 p-3 bg-orange-600 hover:bg-orange-700 text-white rounded-xl transition-colors"
+                    >
+                      🔊
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+          
+        {/* 🎛️ ENHANCED LESSON CONTROLS */}
+        <div className="bg-gradient-to-r from-purple-600/10 to-pink-600/10 backdrop-blur-sm rounded-2xl border border-purple-500/30 p-6">
+          <div className="flex flex-wrap gap-4 items-center justify-between">
+            <div className="flex items-center gap-4">
+              {/* 🇸🇴 BEAUTIFUL SOMALI SUPPORT TOGGLE */}
+              {user?.english_level === 'beginner' && lesson.content_somali && (
+                <button
+                  onClick={() => setShowSomaliSupport(!showSomaliSupport)}
+                  className={`px-6 py-3 rounded-xl font-medium transition-all duration-300 flex items-center gap-3 ${
+                    showSomaliSupport 
+                      ? 'bg-gradient-to-r from-green-600 to-emerald-600 text-white shadow-lg shadow-green-500/25 scale-105' 
+                      : 'bg-gray-700 text-gray-300 hover:bg-gradient-to-r hover:from-green-600 hover:to-emerald-600 hover:text-white hover:shadow-lg hover:shadow-green-500/25'
+                  }`}
+                >
+                  <span className="text-xl">🇸🇴</span>
+                  <span>{showSomaliSupport ? 'Hide' : 'Show'} Somali Help</span>
+                </button>
+              )}
+                  
+              {/* Audio Speed Control */}
+              {lesson.audio_content && (
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-gray-400">Speed:</span>
+                  {[0.5, 1, 1.5, 2].map(speed => (
+                    <button
+                      key={speed}
+                      onClick={() => setPlaybackSpeed(speed)}
+                      className={`px-2 py-1 rounded text-xs font-medium transition-colors ${
+                        playbackSpeed === speed
+                          ? 'bg-blue-600 text-white'
+                          : 'bg-gray-600 text-gray-300 hover:bg-gray-500'
+                      }`}
+                    >
+                      {speed}x
+                    </button>
                   ))}
                 </div>
               )}
-
-              {content.phrases && (
-                <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-4">
-                  <h5 className="text-lg font-medium text-yellow-400 mb-2">Useful Phrases:</h5>
-                  <ul className="space-y-2">
-                    {content.phrases.map((phrase, idx) => (
-                      <li key={idx} className="text-gray-300">• {phrase}</li>
-                    ))}
-                  </ul>
-                </div>
-              )}
             </div>
-          )}
-
-          {lesson.type === 'phrases' && (
-            <div>
-              {/* TEMP: Add try-catch to identify exact error location */}
-              {(() => {
-                try {
-                  return (
-                    <div>
-              {content.topic && (
-                <div className="bg-purple-500/10 border border-purple-500/30 rounded-lg p-4 mb-6">
-                  <p className="text-purple-100">{content.topic}</p>
+            
+            <div className="text-sm text-purple-400">
+              ✨ Enhanced Lesson with Audio & Quiz
+            </div>
+          </div>
+        </div>
+          
+        {/* 🎯 BEAUTIFUL INTERACTIVE EXAMPLES WITH PHONETIC GUIDES */}
+        {content.examples && (
+          <div className="bg-gradient-to-br from-cyan-600/10 to-blue-600/10 backdrop-blur-sm rounded-2xl border border-cyan-500/30 overflow-hidden mb-8">
+            <div className="bg-gradient-to-r from-cyan-600/20 to-blue-600/20 p-6 border-b border-cyan-400/20">
+              <h3 className="text-2xl font-bold text-white flex items-center gap-3">
+                <div className="w-8 h-8 bg-cyan-500 rounded-lg flex items-center justify-center">
+                  <span className="text-lg">💬</span>
                 </div>
-              )}
-
-              {content.explanation && (
-                <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-4 mb-6">
-                  <p className="text-blue-100">{content.explanation}</p>
-                </div>
-              )}
-
-              {/* Handle phrases array - check if it's array of strings or objects */}
-              {content.phrases && Array.isArray(content.phrases) && (
-                <div className="mb-8">
-                  <h4 className="text-xl font-semibold text-white mb-3">Key Phrases</h4>
-                  <div className="grid gap-4">
-                    {content.phrases.map((phraseItem, idx) => {
-                      // Handle both string and object phrase formats
-                      const isObject = typeof phraseItem === 'object' && phraseItem !== null
-                      const phraseText = isObject ? phraseItem.phrase : phraseItem
+                Interactive Examples
+              </h3>
+              <p className="text-cyan-200 mt-2">Practice with real-life sentences</p>
+            </div>
+            
+            <div className="p-6 space-y-6">
+              {content.examples.map((example, idx) => (
+                <div key={idx} className="group bg-white/5 backdrop-blur-sm rounded-2xl p-6 border border-white/10 hover:border-cyan-400/30 transition-all duration-500 hover:bg-white/10">
+                  {/* Example Sentence */}
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex-1">
+                      <p className="text-2xl font-semibold text-white mb-2">{example}</p>
                       
-                      return (
-                        <div key={idx} className="bg-gray-800 rounded-lg p-4">
-                          <div className="flex items-start justify-between mb-2">
-                            <h5 className="text-lg font-medium text-purple-400">{String(phraseText || '')}</h5>
-                            <button
-                              onClick={() => playAudio(`phrase-${idx}`, String(phraseText || ''))}
-                              className={`p-2 rounded-md transition-colors ${
-                                audioPlaying === `phrase-${idx}`
-                                  ? 'bg-purple-600 text-white'
-                                  : 'bg-gray-600 hover:bg-gray-500 text-gray-300'
-                              }`}
-                            >
-                              🔊
-                            </button>
+                      {/* 🗣️ SOMALI PHONETIC GUIDE */}
+                      <div className="bg-purple-600/10 rounded-xl p-4 border border-purple-400/20">
+                        <h6 className="text-purple-300 font-medium mb-2 flex items-center gap-2">
+                          <span>🗣️</span> Pronunciation Guide
+                        </h6>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div>
+                            <p className="text-gray-400 text-sm mb-1">English Phonetics:</p>
+                            <p className="text-blue-300 font-mono text-lg">/{example.toLowerCase().replace(/[.,!?]/g, '')}/</p>
                           </div>
-                          {isObject && phraseItem.use && <p className="text-gray-400 text-sm mb-2">{String(phraseItem.use)}</p>}
-                          {isObject && phraseItem.response && <p className="text-green-400 text-sm mb-2"><strong>Response:</strong> {String(phraseItem.response)}</p>}
-                          {isObject && phraseItem.example && <p className="text-blue-400 italic">"{String(phraseItem.example)}"</p>}
-                        
-                          {/* NEW: Real scenarios */}
-                          {isObject && phraseItem.real_scenarios && Array.isArray(phraseItem.real_scenarios) && (
-                            <div className="mt-3 pt-3 border-t border-gray-600">
-                              <h6 className="text-sm font-medium text-cyan-400 mb-2">Real-life scenarios:</h6>
-                              <ul className="space-y-1">
-                                {phraseItem.real_scenarios.map((scenario, sIdx) => (
-                                  <li key={sIdx} className="text-cyan-300 text-sm">• {String(scenario || '')}</li>
-                                ))}
-                              </ul>
-                            </div>
-                          )}
-
-                          {/* NEW: Cultural context */}
-                          {isObject && phraseItem.cultural_context && (
-                            <div className="mt-3 pt-3 border-t border-gray-600">
-                              <p className="text-yellow-300 text-sm">
-                                <strong>💡 Cultural tip:</strong> {String(phraseItem.cultural_context)}
-                              </p>
-                            </div>
-                          )}
-
-                          {/* NEW: Somali translation for beginners */}
-                          {showSomaliSupport && lesson.content_somali?.phrases_translation && lesson.content_somali.phrases_translation[idx] && (
-                            <div className="mt-3 pt-3 border-t border-green-400/20">
-                              <p className="text-green-300 text-sm">
-                                <strong>🇸🇴 Somali:</strong> {lesson.content_somali.phrases_translation[idx].example_somali || lesson.content_somali.phrases_translation[idx].use}
+                          {showSomaliSupport && (
+                            <div>
+                              <p className="text-gray-400 text-sm mb-1">Somali Phonetics:</p>
+                              <p className="text-green-300 font-mono text-lg">
+                                {example.toLowerCase()
+                                  .replace(/working/g, 'waarking')
+                                  .replace(/friend/g, 'freend')
+                                  .replace(/streaming/g, 'siriiming')
+                                  .replace(/learning/g, 'laarning')
+                                  .replace(/ordering/g, 'oordaring')
+                                  .replace(/today/g, 'tudey')
+                                  .replace(/together/g, 'tugeder')
+                                  .replace(/online/g, 'onlayn')
+                                }
                               </p>
                             </div>
                           )}
                         </div>
-                      )
-                    })}
-                  </div>
-                </div>
-              )}
-
-              {/* Handle advanced phrases structures */}
-              {content.presenting_arguments && (
-                <div className="mb-8">
-                  <h4 className="text-xl font-semibold text-white mb-3">Presenting Arguments</h4>
-                  <div className="grid gap-4">
-                    {content.presenting_arguments.map((item, idx) => (
-                      <div key={idx} className="bg-gray-800 rounded-lg p-4">
-                        <h5 className="text-lg font-medium text-purple-400">{item.phrase}</h5>
-                        <p className="text-gray-400 text-sm mb-2">{item.use}</p>
-                        <p className="text-blue-400 italic">"{item.example}"</p>
                       </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {content.counterarguments && (
-                <div className="mb-8">
-                  <h4 className="text-xl font-semibold text-white mb-3">Counterarguments</h4>
-                  <div className="grid gap-4">
-                    {content.counterarguments.map((item, idx) => (
-                      <div key={idx} className="bg-gray-800 rounded-lg p-4">
-                        <h5 className="text-lg font-medium text-red-400">{item.phrase}</h5>
-                        <p className="text-blue-400 italic">"{item.example}"</p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {content.introducing_topics && (
-                <div className="mb-8">
-                  <h4 className="text-xl font-semibold text-white mb-3">Introducing Topics</h4>
-                  <div className="grid gap-4">
-                    {content.introducing_topics.map((item, idx) => (
-                      <div key={idx} className="bg-gray-800 rounded-lg p-4">
-                        <h5 className="text-lg font-medium text-green-400">{item.phrase}</h5>
-                        <p className="text-gray-400 text-sm mb-2">{item.use}</p>
-                        <p className="text-blue-400 italic">"{item.example}"</p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {content.supporting_arguments && (
-                <div className="mb-8">
-                  <h4 className="text-xl font-semibold text-white mb-3">Supporting Arguments</h4>
-                  <div className="grid gap-4">
-                    {content.supporting_arguments.map((item, idx) => (
-                      <div key={idx} className="bg-gray-800 rounded-lg p-4">
-                        <h5 className="text-lg font-medium text-yellow-400">{item.phrase}</h5>
-                        <p className="text-gray-400 text-sm mb-2">{item.use}</p>
-                        <p className="text-blue-400 italic">"{item.example}"</p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {content.concluding && (
-                <div className="mb-8">
-                  <h4 className="text-xl font-semibold text-white mb-3">Concluding Phrases</h4>
-                  <div className="bg-gray-800 rounded-lg p-4">
-                    <ul className="space-y-2">
-                      {content.concluding.map((phrase, idx) => (
-                        <li key={idx} className="text-orange-400">• {phrase}</li>
-                      ))}
-                    </ul>
-                  </div>
-                </div>
-              )}
-
-              {content.agreeing && (
-                <div className="mb-8">
-                  <h4 className="text-xl font-semibold text-white mb-3">Expressing Agreement</h4>
-                  <div className="bg-green-500/10 border border-green-500/30 rounded-lg p-4">
-                    <ul className="space-y-2">
-                      {content.agreeing.map((phrase, idx) => (
-                        <li key={idx} className="text-green-400">• {phrase}</li>
-                      ))}
-                    </ul>
-                  </div>
-                </div>
-              )}
-
-              {content.disagreeing && (
-                <div className="mb-8">
-                  <h4 className="text-xl font-semibold text-white mb-3">Expressing Disagreement</h4>
-                  <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-4">
-                    <ul className="space-y-2">
-                      {content.disagreeing.map((phrase, idx) => (
-                        <li key={idx} className="text-red-400">• {phrase}</li>
-                      ))}
-                    </ul>
-                  </div>
-                </div>
-              )}
-
-              {content.polite_expressions && (
-                <div className="mb-8">
-                  <h4 className="text-xl font-semibold text-white mb-3">Polite Expressions</h4>
-                  <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-4">
-                    <ul className="space-y-2">
-                      {content.polite_expressions.map((phrase, idx) => (
-                        <li key={idx} className="text-blue-400">• {phrase}</li>
-                      ))}
-                    </ul>
-                  </div>
-                </div>
-              )}
-
-              {content.responses && (
-                <div className="mb-8">
-                  <h4 className="text-xl font-semibold text-white mb-3">Common Responses</h4>
-                  <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-4">
-                    <ul className="space-y-2">
-                      {content.responses.map((phrase, idx) => (
-                        <li key={idx} className="text-yellow-400">• {phrase}</li>
-                      ))}
-                    </ul>
-                  </div>
-                </div>
-              )}
-
-              {content.time_expressions && (
-                <div className="mb-8">
-                  <h4 className="text-xl font-semibold text-white mb-3">Time Expressions</h4>
-                  <div className="bg-cyan-500/10 border border-cyan-500/30 rounded-lg p-4">
-                    <ul className="space-y-2">
-                      {content.time_expressions.map((phrase, idx) => (
-                        <li key={idx} className="text-cyan-400">• {phrase}</li>
-                      ))}
-                    </ul>
-                  </div>
-                </div>
-              )}
-
-              {/* NEW: Enhanced phrases content structures - Updated */}
-              {content.money_vocabulary && Array.isArray(content.money_vocabulary) && content.money_vocabulary.length > 0 && (
-                <div className="mb-8">
-                  <h4 className="text-xl font-semibold text-white mb-3">Money Vocabulary</h4>
-                  <div className="grid gap-4">
-                    {content.money_vocabulary.map((item, idx) => (
-                      <div key={idx} className="bg-gray-800 rounded-lg p-4">
-                        <h5 className="text-lg font-medium text-green-400">{String(item.term || '')}</h5>
-                        <p className="text-gray-400 text-sm mb-2">{String(item.meaning || '')}</p>
-                        <p className="text-blue-400 italic">"{String(item.example || '')}"</p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {content.shopping_tips && Array.isArray(content.shopping_tips) && content.shopping_tips.length > 0 && (
-                <div className="mb-8">
-                  <h4 className="text-xl font-semibold text-white mb-3">Shopping Tips</h4>
-                  <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-4">
-                    <ul className="space-y-2">
-                      {content.shopping_tips.map((tip, idx) => (
-                        <li key={idx} className="text-yellow-400">• {String(tip || '')}</li>
-                      ))}
-                    </ul>
-                  </div>
-                </div>
-              )}
-
-              {content.situations && (
-                <div className="mb-8">
-                  <h4 className="text-xl font-semibold text-white mb-3">Common Situations</h4>
-                  <div className="grid gap-4">
-                    {content.situations.map((situation, idx) => (
-                      <div key={idx} className="bg-gray-800 rounded-lg p-4">
-                        <h5 className="text-lg font-medium text-cyan-400">{situation.situation || situation}</h5>
-                        {situation.polite_phrases && (
-                          <div className="mt-3">
-                            <ul className="space-y-1">
-                              {situation.polite_phrases.map((phrase, pIdx) => (
-                                <li key={pIdx} className="text-gray-300 text-sm">• {phrase}</li>
-                              ))}
-                            </ul>
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {content.cultural_tips && (
-                <div className="mb-8">
-                  <h4 className="text-xl font-semibold text-white mb-3">Cultural Tips</h4>
-                  <div className="bg-purple-500/10 border border-purple-500/30 rounded-lg p-4">
-                    <ul className="space-y-2">
-                      {content.cultural_tips.map((tip, idx) => (
-                        <li key={idx} className="text-purple-400">• {tip}</li>
-                      ))}
-                    </ul>
-                  </div>
-                </div>
-              )}
-
-              {content.helpful_responses && (
-                <div className="mb-8">
-                  <h4 className="text-xl font-semibold text-white mb-3">Common Responses</h4>
-                  <div className="grid gap-4">
-                    {content.helpful_responses.map((response, idx) => (
-                      <div key={idx} className="bg-gray-800 rounded-lg p-4">
-                        {response.positive && (
-                          <div className="mb-2">
-                            <span className="text-green-400 font-medium">{response.positive}</span>
-                            <p className="text-gray-400 text-sm">{response.meaning}</p>
-                          </div>
-                        )}
-                        {response.polite_decline && (
-                          <div className="mb-2">
-                            <span className="text-yellow-400 font-medium">{response.polite_decline}</span>
-                            <p className="text-gray-400 text-sm">{response.meaning}</p>
-                          </div>
-                        )}
-                        {response.redirect && (
-                          <div className="mb-2">
-                            <span className="text-blue-400 font-medium">{response.redirect}</span>
-                            <p className="text-gray-400 text-sm">{response.meaning}</p>
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {content.help_seeking_strategies && (
-                <div className="mb-8">
-                  <h4 className="text-xl font-semibold text-white mb-3">Help Seeking Strategies</h4>
-                  <div className="bg-green-500/10 border border-green-500/30 rounded-lg p-4">
-                    <ul className="space-y-2">
-                      {content.help_seeking_strategies.map((strategy, idx) => (
-                        <li key={idx} className="text-green-400">• {strategy}</li>
-                      ))}
-                    </ul>
-                  </div>
-                </div>
-              )}
-
-              {content.common_help_needs && (
-                <div className="mb-8">
-                  <h4 className="text-xl font-semibold text-white mb-3">Common Help Needs</h4>
-                  <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-4">
-                    <ul className="space-y-2">
-                      {content.common_help_needs.map((need, idx) => (
-                        <li key={idx} className="text-blue-400">• {need}</li>
-                      ))}
-                    </ul>
-                  </div>
-                </div>
-              )}
-
-              {content.family_scenarios && Array.isArray(content.family_scenarios) && (
-                <div className="mb-8">
-                  <h4 className="text-xl font-semibold text-white mb-3">Family Scenarios</h4>
-                  <div className="bg-pink-500/10 border border-pink-500/30 rounded-lg p-4">
-                    <ul className="space-y-2">
-                      {content.family_scenarios.map((scenario, idx) => (
-                        <li key={idx} className="text-pink-400">• {String(scenario || '')}</li>
-                      ))}
-                    </ul>
-                  </div>
-                </div>
-              )}
                     </div>
-                  )
-                } catch (error) {
-                  console.error('🚨 Error rendering phrases lesson:', error)
-                  return <div className="text-red-400 p-4 bg-red-500/10 border border-red-500/30 rounded-lg">
-                    <h4>Error loading lesson content</h4>
-                    <p>Check console for details</p>
+                    
+                    {/* Audio Button */}
+                    <button
+                      onClick={() => playAudio(`example-${idx}`, example)}
+                      className={`ml-6 p-4 rounded-2xl transition-all duration-300 group-hover:scale-110 ${
+                        audioPlaying === `example-${idx}`
+                          ? 'bg-cyan-600 text-white shadow-2xl shadow-cyan-500/25 scale-110'
+                          : 'bg-gray-700 hover:bg-cyan-600 text-gray-300 hover:text-white hover:shadow-xl hover:shadow-cyan-500/25'
+                      }`}
+                    >
+                      <span className="text-2xl">🔊</span>
+                    </button>
                   </div>
-                }
-              })()}
-            </div>
-          )}
-
-          {/* Handle advanced grammar structures */}
-          {lesson.type === 'grammar' && content.types && (
-            <div className="mb-8">
-              <h4 className="text-xl font-semibold text-white mb-3">Grammar Types</h4>
-              <div className="grid gap-4">
-                {content.types.map((type, idx) => (
-                  <div key={idx} className="bg-gray-800 rounded-lg p-4">
-                    <h5 className="text-lg font-medium text-purple-400">{type.name}</h5>
-                    <p className="text-gray-400 text-sm mb-2">{type.use}</p>
-                    {type.structure && <p className="text-yellow-400 text-sm mb-2"><strong>Structure:</strong> {type.structure}</p>}
-                    {type.example && <p className="text-blue-400 italic">"{type.example}"</p>}
-                    {type.examples && (
-                      <div className="mt-2">
-                        {type.examples.map((example, exIdx) => (
-                          <p key={exIdx} className="text-blue-400 italic text-sm">"{example}"</p>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {content.forms && (
-            <div className="mb-8">
-              <h4 className="text-xl font-semibold text-white mb-3">Forms</h4>
-              <div className="bg-gray-800 rounded-lg p-4">
-                <ul className="space-y-2">
-                  {content.forms.map((form, idx) => (
-                    <li key={idx} className="text-green-400">• {form}</li>
-                  ))}
-                </ul>
-              </div>
-            </div>
-          )}
-
-          {content.uses && (
-            <div className="mb-8">
-              <h4 className="text-xl font-semibold text-white mb-3">Uses</h4>
-              <div className="bg-gray-800 rounded-lg p-4">
-                <ul className="space-y-2">
-                  {content.uses.map((use, idx) => (
-                    <li key={idx} className="text-yellow-400">• {use}</li>
-                  ))}
-                </ul>
-              </div>
-            </div>
-          )}
-
-          {content.tense_changes && (
-            <div className="mb-8">
-              <h4 className="text-xl font-semibold text-white mb-3">Tense Changes</h4>
-              <div className="bg-gray-800 rounded-lg p-4">
-                <ul className="space-y-2">
-                  {content.tense_changes.map((change, idx) => (
-                    <li key={idx} className="text-cyan-400">• {change}</li>
-                  ))}
-                </ul>
-              </div>
-            </div>
-          )}
-
-          {content.time_changes && (
-            <div className="mb-8">
-              <h4 className="text-xl font-semibold text-white mb-3">Time Changes</h4>
-              <div className="bg-gray-800 rounded-lg p-4">
-                <ul className="space-y-2">
-                  {content.time_changes.map((change, idx) => (
-                    <li key={idx} className="text-pink-400">• {change}</li>
-                  ))}
-                </ul>
-              </div>
-            </div>
-          )}
-
-          {content.advanced_patterns && (
-            <div className="mb-8">
-              <h4 className="text-xl font-semibold text-white mb-3">Advanced Patterns</h4>
-              <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-4">
-                <ul className="space-y-2">
-                  {content.advanced_patterns.map((pattern, idx) => (
-                    <li key={idx} className="text-red-400">• {pattern}</li>
-                  ))}
-                </ul>
-              </div>
-            </div>
-          )}
-
-          {/* Handle vocabulary structures */}
-          {lesson.type === 'vocabulary' && content.colors && (
-            <div className="mb-8">
-              <h4 className="text-xl font-semibold text-white mb-3">Colors</h4>
-              <div className="grid gap-4">
-                {content.colors.map((color, idx) => (
-                  <div key={idx} className="bg-gray-800 rounded-lg p-4">
-                    <h5 className="text-lg font-medium text-white">{color.word}</h5>
-                    <p className="text-gray-400 text-sm">{color.meaning}</p>
-                    <p className="text-blue-400 italic mt-2">"{color.example}"</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {content.numbers && (
-            <div className="mb-8">
-              <h4 className="text-xl font-semibold text-white mb-3">Numbers</h4>
-              <div className="grid gap-4">
-                {content.numbers.map((number, idx) => (
-                  <div key={idx} className="bg-gray-800 rounded-lg p-4">
-                    <h5 className="text-lg font-medium text-white">{number.word}</h5>
-                    <p className="text-gray-400 text-sm">{number.meaning}</p>
-                    <p className="text-blue-400 italic mt-2">"{number.example}"</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {content.food && (
-            <div className="mb-8">
-              <h4 className="text-xl font-semibold text-white mb-3">Food</h4>
-              <div className="grid gap-4">
-                {content.food.map((food, idx) => (
-                  <div key={idx} className="bg-gray-800 rounded-lg p-4">
-                    <h5 className="text-lg font-medium text-white">{food.word}</h5>
-                    <p className="text-gray-400 text-sm">{food.meaning}</p>
-                    <p className="text-blue-400 italic mt-2">"{food.example}"</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {content.drinks && (
-            <div className="mb-8">
-              <h4 className="text-xl font-semibold text-white mb-3">Drinks</h4>
-              <div className="grid gap-4">
-                {content.drinks.map((drink, idx) => (
-                  <div key={idx} className="bg-gray-800 rounded-lg p-4">
-                    <h5 className="text-lg font-medium text-white">{drink.word}</h5>
-                    <p className="text-gray-400 text-sm">{drink.meaning}</p>
-                    <p className="text-blue-400 italic mt-2">"{drink.example}"</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {content.basic_emotions && (
-            <div className="mb-8">
-              <h4 className="text-xl font-semibold text-white mb-3">Basic Emotions</h4>
-              <div className="grid gap-4">
-                {content.basic_emotions.map((emotion, idx) => (
-                  <div key={idx} className="bg-gray-800 rounded-lg p-4">
-                    <h5 className="text-lg font-medium text-white">{emotion.word}</h5>
-                    <p className="text-gray-400 text-sm">{emotion.meaning}</p>
-                    <p className="text-blue-400 italic mt-2">"{emotion.example}"</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {content.advanced_emotions && (
-            <div className="mb-8">
-              <h4 className="text-xl font-semibold text-white mb-3">Advanced Emotions</h4>
-              <div className="grid gap-4">
-                {content.advanced_emotions.map((emotion, idx) => (
-                  <div key={idx} className="bg-gray-800 rounded-lg p-4">
-                    <h5 className="text-lg font-medium text-white">{emotion.word}</h5>
-                    <p className="text-gray-400 text-sm">{emotion.meaning}</p>
-                    <p className="text-blue-400 italic mt-2">"{emotion.example}"</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {content.expressions && (
-            <div className="mb-8">
-              <h4 className="text-xl font-semibold text-white mb-3">Expressions</h4>
-              <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-4">
-                <ul className="space-y-2">
-                  {content.expressions.map((expression, idx) => (
-                    <li key={idx} className="text-yellow-400">• {expression}</li>
-                  ))}
-                </ul>
-              </div>
-            </div>
-          )}
-
-          {content.useful_phrases && (
-            <div className="mb-8">
-              <h4 className="text-xl font-semibold text-white mb-3">Useful Phrases</h4>
-              <div className="bg-green-500/10 border border-green-500/30 rounded-lg p-4">
-                <ul className="space-y-2">
-                  {content.useful_phrases.map((phrase, idx) => (
-                    <li key={idx} className="text-green-400">• {phrase}</li>
-                  ))}
-                </ul>
-              </div>
-            </div>
-          )}
-
-          {content.professional_phrases && (
-            <div className="mb-8">
-              <h4 className="text-xl font-semibold text-white mb-3">Professional Phrases</h4>
-              <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-4">
-                <ul className="space-y-2">
-                  {content.professional_phrases.map((phrase, idx) => (
-                    <li key={idx} className="text-blue-400">• {phrase}</li>
-                  ))}
-                </ul>
-              </div>
-            </div>
-          )}
-
-          {content.transitions && (
-            <div className="mb-8">
-              <h4 className="text-xl font-semibold text-white mb-3">Transition Words</h4>
-              <div className="bg-purple-500/10 border border-purple-500/30 rounded-lg p-4">
-                <ul className="space-y-2">
-                  {content.transitions.map((transition, idx) => (
-                    <li key={idx} className="text-purple-400">• {transition}</li>
-                  ))}
-                </ul>
-              </div>
-            </div>
-          )}
-
-          {content.money_vocabulary && (
-            <div className="mb-8">
-              <h4 className="text-xl font-semibold text-white mb-3">Money Vocabulary</h4>
-              <div className="bg-green-500/10 border border-green-500/30 rounded-lg p-4">
-                <ul className="space-y-2">
-                  {content.money_vocabulary.map((word, idx) => (
-                    <li key={idx} className="text-green-400">• {word}</li>
-                  ))}
-                </ul>
-              </div>
-            </div>
-          )}
-
-          {/* Fallback for other lesson types or old content structure */}
-          {!['grammar', 'vocabulary', 'phrases'].includes(lesson.type) && content.sections && (
-            <div>
-              {content.sections.map((section, index) => (
-                <div key={index} className="mb-8">
-                  <h4 className="text-xl font-semibold text-white mb-3">{section.title}</h4>
                   
-                  {section.explanation && (
-                    <p className="text-gray-300 mb-4">{section.explanation}</p>
-                  )}
-
-                  {section.examples && (
-                    <div className="bg-gray-800 rounded-lg p-4 mb-4">
-                      <h5 className="text-lg font-medium text-white mb-2">Examples:</h5>
-                      <ul className="space-y-2">
-                        {section.examples.map((example, idx) => (
-                          <li key={idx} className="text-gray-300">
-                            <span className="text-blue-400">{example.english}</span>
-                            {example.meaning && (
-                              <span className="text-gray-400 ml-2">- {example.meaning}</span>
-                            )}
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-
-                  {section.practice && (
-                    <div className="bg-green-500/10 border border-green-500/30 rounded-lg p-4">
-                      <h5 className="text-lg font-medium text-green-400 mb-2">Practice:</h5>
-                      <p className="text-gray-300">{section.practice}</p>
+                  {/* Somali Translation */}
+                  {showSomaliSupport && somalicontent.examples_translation?.[idx] && (
+                    <div className="bg-green-600/10 rounded-xl p-4 border border-green-400/20">
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="text-green-400">🇸🇴</span>
+                        <h6 className="text-green-300 font-medium">Somali Translation:</h6>
+                      </div>
+                      <p className="text-green-200 text-lg leading-relaxed">{somalicontent.examples_translation[idx]}</p>
                     </div>
                   )}
                 </div>
               ))}
             </div>
-          )}
-        </div>
-
-        {/* NEW: Quiz Section for Enhanced Lessons */}
-        {lesson.is_enhanced && lesson.quiz_questions && (
-          <div className="mt-8 p-6 bg-gradient-to-r from-purple-500/10 to-pink-500/10 border border-purple-500/30 rounded-lg">
-            <h4 className="text-xl font-bold text-white mb-4">
-              📚 Quick Quiz - Test Your Knowledge!
-              {showSomaliSupport && <span className="text-sm text-green-400 block">Su'aalaha dhakhso ah - Aqoontaada tijaabiyo!</span>}
-            </h4>
-            
-            {!currentQuiz ? (
-              <div className="text-center">
-                <p className="text-gray-300 mb-4">
-                  Complete a quick quiz to test what you learned!
-                  {showSomaliSupport && <span className="text-green-300 block text-sm">Su'aal dhakhso ah ku dhammee si aad u tijaabisid waxaad baratay!</span>}
-                </p>
-                <button
-                  onClick={() => startQuiz(lesson)}
-                  className="px-6 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-medium transition-colors"
-                >
-                  Start Quiz / Bilaab Su'aalaha
-                </button>
-              </div>
-            ) : (
-              <div>
-                <div className="mb-4">
-                  <div className="flex justify-between items-center mb-2">
-                    <span className="text-sm text-gray-400">
-                      Question {currentQuiz.currentQuestion + 1} of {currentQuiz.questions.length}
-                    </span>
-                    <span className="text-sm text-green-400">
-                      Score: {currentQuiz.score}/{currentQuiz.questions.length}
-                    </span>
-                  </div>
-                  <div className="w-full bg-gray-700 rounded-full h-2">
-                    <div 
-                      className="bg-purple-600 h-2 rounded-full transition-all"
-                      style={{width: `${((currentQuiz.currentQuestion + 1) / currentQuiz.questions.length) * 100}%`}}
-                    ></div>
-                  </div>
-                </div>
-
-                {currentQuiz.currentQuestion < currentQuiz.questions.length && (
-                  <div>
-                    <div className="mb-6">
-                      <h5 className="text-lg font-medium text-white mb-2">
-                        {currentQuiz.questions[currentQuiz.currentQuestion].question}
-                      </h5>
-                      {showSomaliSupport && currentQuiz.questions[currentQuiz.currentQuestion].question_somali && (
-                        <p className="text-green-300 text-sm mb-3">
-                          🇸🇴 {currentQuiz.questions[currentQuiz.currentQuestion].question_somali}
-                        </p>
-                      )}
-                    </div>
-
-                    <div className="space-y-3">
-                      {currentQuiz.questions[currentQuiz.currentQuestion].options.map((option, idx) => (
-                        <button
-                          key={idx}
-                          onClick={() => submitQuizAnswer(currentQuiz.currentQuestion, idx)}
-                          className="w-full p-3 text-left bg-gray-700 hover:bg-gray-600 border border-gray-600 rounded-lg transition-colors"
-                        >
-                          <span className="text-white font-medium">{String.fromCharCode(65 + idx)})</span>
-                          <span className="text-gray-300 ml-2">{option}</span>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {currentQuiz.currentQuestion >= currentQuiz.questions.length && (
-                  <div className="text-center">
-                    <div className="text-2xl mb-4">
-                      {quizCompleted ? '🎉' : '📚'}
-                    </div>
-                    <h5 className="text-lg font-bold text-white mb-2">
-                      {quizCompleted ? 'Quiz Completed!' : 'Try Again!'}
-                    </h5>
-                    <p className="text-gray-300 mb-4">
-                      Final Score: {currentQuiz.score}/{currentQuiz.questions.length}
-                      {quizCompleted 
-                        ? <span className="text-green-400 block text-sm">🎉 Perfect score! You can complete the lesson!</span>
-                        : <span className="text-yellow-400 block text-sm">⚠️ Need 3/3 correct to pass</span>
-                      }
-                      {showSomaliSupport && (
-                        <span className="text-green-300 block text-sm">
-                          {quizCompleted 
-                            ? "🎉 Dhibac kaamil! Casharku dhammee kartaa!"
-                            : "⚠️ Waxaad u baahan tahay 3/3 sax si aad u gudbatid"
-                          }
-                        </span>
-                      )}
-                    </p>
-                    {!quizCompleted && (
-                      <button
-                        onClick={() => startQuiz(lesson)}
-                        className="px-6 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-medium transition-colors"
-                      >
-                        Try Again / Mar kale isku day
-                      </button>
-                    )}
-                  </div>
-                )}
-              </div>
-            )}
           </div>
         )}
 
-        <div className="flex flex-col sm:flex-row justify-between items-center pt-4 sm:pt-6 border-t border-gray-700 space-y-3 sm:space-y-0">
+        {/* 📊 CONFIDENCE METER */}
+        <div className="bg-gradient-to-br from-violet-600/10 to-purple-600/10 backdrop-blur-sm rounded-2xl border border-violet-500/30 overflow-hidden mb-8">
+          <div className="bg-gradient-to-r from-violet-600/20 to-purple-600/20 p-6 border-b border-violet-400/20">
+            <h3 className="text-2xl font-bold text-white flex items-center gap-3">
+              <div className="w-8 h-8 bg-violet-500 rounded-lg flex items-center justify-center">
+                <span className="text-lg">📊</span>
+              </div>
+              Confidence Check
+            </h3>
+            <p className="text-violet-200 mt-2">How confident do you feel about {lesson.title.toLowerCase()}?</p>
+          </div>
+          
+          <div className="p-6">
+            <div className="text-center mb-6">
+              <p className="text-white text-lg mb-4">Rate your confidence level:</p>
+              <div className="flex justify-center gap-3 mb-4">
+                {[1, 2, 3, 4, 5].map((level) => (
+                  <button
+                    key={level}
+                    onClick={() => setConfidenceLevel(level)}
+                    className={`w-12 h-12 rounded-full transition-all duration-300 flex items-center justify-center ${
+                      confidenceLevel >= level
+                        ? 'bg-violet-600 text-white shadow-lg shadow-violet-500/25 scale-110'
+                        : 'bg-gray-700 text-gray-400 hover:bg-violet-600 hover:text-white'
+                    }`}
+                  >
+                    ⭐
+                  </button>
+                ))}
+              </div>
+              
+              {confidenceLevel > 0 && (
+                <div className="bg-white/5 backdrop-blur-sm rounded-xl p-4 border border-white/10">
+                  <p className="text-violet-300 text-lg">
+                    {confidenceLevel === 1 && "🌱 Just starting - that's perfectly normal!"}
+                    {confidenceLevel === 2 && "🌿 Getting there - keep practicing!"}
+                    {confidenceLevel === 3 && "🌸 Good progress - you're learning well!"}
+                    {confidenceLevel === 4 && "🌟 Very confident - excellent work!"}
+                    {confidenceLevel === 5 && "🚀 Master level - ready for the quiz!"}
+                  </p>
+                  {showSomaliSupport && (
+                    <p className="text-green-300 text-sm mt-2">
+                      🇸🇴 {confidenceLevel <= 2 ? "Waa caadi, sii wad!" : "Aad ayaad u fiican tahay!"}
+                    </p>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+        
+        {/* 💬 CONVERSATION STARTERS */}
+        <div className="bg-gradient-to-br from-emerald-600/10 to-teal-600/10 backdrop-blur-sm rounded-2xl border border-emerald-500/30 overflow-hidden mb-8">
+          <div className="bg-gradient-to-r from-emerald-600/20 to-teal-600/20 p-6 border-b border-emerald-400/20">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 bg-emerald-500 rounded-lg flex items-center justify-center">
+                  <span className="text-lg">💬</span>
+                </div>
+                <div>
+                  <h3 className="text-2xl font-bold text-white">Conversation Practice</h3>
+                  <p className="text-emerald-200 mt-1">Practice using {lesson.title.toLowerCase()} in real conversations</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowConversationStarters(!showConversationStarters)}
+                className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl transition-colors"
+              >
+                {showConversationStarters ? 'Hide' : 'Show'} Practice
+              </button>
+            </div>
+          </div>
+          
+          {showConversationStarters && (
+            <div className="p-6">
+              {/* Dynamic Conversation Templates Based on Lesson Type */}
+              {(() => {
+                // Generate conversation templates based on lesson type
+                let conversations = []
+                
+                if (lesson.title.includes('Present Tense') || lesson.title.includes('To Be')) {
+                  conversations = [
+                    {
+                      title: "Meeting Someone New",
+                      english: ["Hi, I am Sarah.", "Nice to meet you! I am Ahmed.", "I am from Somalia. Where are you from?", "I am from the United States."],
+                      somali: ["Salaan, waxaan ahay Sarah.", "Waa ku mahadsantahay! Waxaan ahay Ahmed.", "Waxaan ka imid Soomaaliya. Xaggee ka timid?", "Waxaan ka imid Maraykanka."]
+                    },
+                    {
+                      title: "Describing Yourself",
+                      english: ["I am a student.", "She is very kind.", "We are learning English.", "They are my family."],
+                      somali: ["Waxaan ahay arday.", "Waxay tahay qof naxariis leh.", "Waxaanu baranaynaa Ingiriiska.", "Waxay yihiin qoyskaayga."]
+                    }
+                  ]
+                } else if (lesson.title.includes('Questions')) {
+                  conversations = [
+                    {
+                      title: "Asking for Information",
+                      english: ["What is your name?", "Where are you from?", "How are you today?", "When is your birthday?"],
+                      somali: ["Magacaaga maa?", "Xaggee ka timid?", "Sidee tahay maanta?", "Goorma dhalashadaaga?"]
+                    },
+                    {
+                      title: "Getting to Know Someone",
+                      english: ["Who is your favorite teacher?", "What do you like to do?", "How is your family?", "When do you study?"],
+                      somali: ["Kuma macallinkaaga ugu fiican?", "Maxaad jeceshahay inaad samayso?", "Sidee tahay qoyskaaga?", "Goorma aad barasho?"]
+                    }
+                  ]
+                } else if (lesson.title.includes('Present Simple')) {
+                  conversations = [
+                    {
+                      title: "Daily Routine",
+                      english: ["I wake up at 7 AM.", "She works from home.", "We study English every day.", "They live in the city."],
+                      somali: ["Waxaan toosaa 7 AM.", "Waxay ka shaqeysaa guriga.", "Waxaanu baranaynaa Ingiriiska maalin kasta.", "Waxay ku nool yihiin magaalada."]
+                    },
+                    {
+                      title: "Habits and Preferences",
+                      english: ["I drink coffee every morning.", "She likes social media.", "We watch movies on weekends.", "They speak Somali at home."],
+                      somali: ["Waxaan cabaa shaah subax kasta.", "Waxay jeceshahay warbaahinta bulshada.", "Waxaanu daawanaynaa filimaha maalintii dambe.", "Waxay ku hadlayaan Soomaali guriga."]
+                    }
+                  ]
+                } else if (lesson.title.includes('Articles')) {
+                  conversations = [
+                    {
+                      title: "Shopping for Technology",
+                      english: ["I need a new phone.", "She downloaded an app.", "Where is the WiFi password?", "I love social media."],
+                      somali: ["Waxaan u baahanahay mobile cusub.", "Waxay soo dejisay app.", "Xaggee waa passwordka WiFi?", "Waxaan jeclahay warbaahinta bulshada."]
+                    },
+                    {
+                      title: "Describing Things",
+                      english: ["This is a good app.", "She has an honest face.", "The internet is slow today.", "I like coffee."],
+                      somali: ["Tani waa app fiican.", "Waxay leedahay wajig cad.", "Internetka maanta waa gaabis.", "Waxaan jeclahay shaah."]
+                    }
+                  ]
+                } else {
+                  // Default conversation for other lesson types
+                  conversations = [
+                    {
+                      title: "General Conversation",
+                      english: ["Hello, how are you?", "I'm learning English.", "This is interesting.", "Thank you for helping."],
+                      somali: ["Salaan, sidee tahay?", "Waxaan baranayaa Ingiriiska.", "Tani waa mid xiiso leh.", "Mahadsanid caawimada."]
+                    },
+                    {
+                      title: "Learning Together",
+                      english: ["Can you help me?", "I understand now.", "This is difficult.", "Let's practice together."],
+                      somali: ["Ma i caawin kartaa?", "Hadda waan fahmi doonaa.", "Tani waa mid adag.", "Aan isku tijaabino."]
+                    }
+                  ]
+                }
+                
+                                 return conversations.map((conversation, idx) => (
+                  <div key={idx} className={`mb-6 ${currentConversation === idx ? 'block' : 'hidden'}`}>
+                    <h4 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
+                      <span className="text-emerald-400">📞</span>
+                      {conversation.title}
+                    </h4>
+                    
+                    <div className="space-y-4">
+                      {conversation.english.map((line, lineIdx) => (
+                        <div key={lineIdx} className="bg-white/5 backdrop-blur-sm rounded-xl p-4 border border-white/10">
+                          <div className="flex items-center justify-between mb-2">
+                            <p className="text-emerald-300 text-lg font-medium">{line}</p>
+                            <button
+                              onClick={() => playAudio(`conversation-${idx}-${lineIdx}`, line)}
+                              className="p-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition-colors"
+                            >
+                              🔊
+                            </button>
+                          </div>
+                          
+                          {showSomaliSupport && conversation.somali[lineIdx] && (
+                            <p className="text-green-300 text-sm pl-4 border-l-2 border-green-400/30">
+                              🇸🇴 {conversation.somali[lineIdx]}
+                            </p>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))
+               })()}
+              
+              {/* Navigation */}
+              <div className="flex justify-center gap-4 mt-6">
+                <button
+                  onClick={() => setCurrentConversation(0)}
+                  className={`px-4 py-2 rounded-xl transition-colors ${
+                    currentConversation === 0 ? 'bg-emerald-600 text-white' : 'bg-gray-700 text-gray-300 hover:bg-emerald-600'
+                  }`}
+                >
+                  Meeting People
+                </button>
+                <button
+                  onClick={() => setCurrentConversation(1)}
+                  className={`px-4 py-2 rounded-xl transition-colors ${
+                    currentConversation === 1 ? 'bg-emerald-600 text-white' : 'bg-gray-700 text-gray-300 hover:bg-emerald-600'
+                  }`}
+                >
+                  Describing Yourself
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* 🎯 BEAUTIFUL ENHANCED QUIZ SECTION */}
+        {lesson.is_enhanced && lesson.quiz_questions && (
+          <div data-quiz-section className="mt-8 bg-gradient-to-br from-pink-600/10 via-purple-600/10 to-indigo-600/10 backdrop-blur-sm rounded-3xl border border-pink-500/30 overflow-hidden">
+            <div className="bg-gradient-to-r from-pink-600/20 to-purple-600/20 p-8 border-b border-pink-400/20">
+              <div className="flex items-center gap-4">
+                <div className="w-16 h-16 bg-gradient-to-br from-pink-500 to-purple-600 rounded-2xl flex items-center justify-center shadow-2xl shadow-purple-500/25">
+                  <span className="text-4xl">🎯</span>
+                </div>
+                <div className="flex-1">
+                  <h2 className="text-3xl font-bold text-white mb-2">
+                    Mastery Quiz - 100% Required!
+                  </h2>
+                  <p className="text-pink-200 text-lg">
+                    Prove your understanding to unlock lesson completion
+                  </p>
+                  {showSomaliSupport && (
+                    <p className="text-green-300 text-sm mt-2">
+                      🇸🇴 Su'aalaha dhammee si aad u dhammeyso casharkan!
+                    </p>
+                  )}
+                </div>
+                <div className="text-right">
+                  {quizCompleted ? (
+                    <div className="px-4 py-2 bg-green-500/20 text-green-300 rounded-xl border border-green-400/30">
+                      ✅ Completed
+                    </div>
+                  ) : (
+                    <div className="px-4 py-2 bg-orange-500/20 text-orange-300 rounded-xl border border-orange-400/30">
+                      ⏳ Required
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+            
+            <div className="p-8">
+              {!currentQuiz ? (
+                <div className="text-center">
+                  <div className="mb-6">
+                    <div className="text-6xl mb-4">🎓</div>
+                                      <h3 className="text-2xl font-bold text-white mb-4">Ready for Your Quiz?</h3>
+                  <p className="text-gray-300 text-lg mb-2">
+                    Test your understanding of {lesson.title.toLowerCase()}
+                  </p>
+                    <p className="text-pink-300 font-medium">
+                      You need 100% correct answers to complete this lesson
+                    </p>
+                    {showSomaliSupport && (
+                      <p className="text-green-300 text-sm mt-3">
+                        🇸🇴 Su'aal dhakhso ah ku dhammee si aad u tijaabisid waxaad baratay!
+                      </p>
+                    )}
+                  </div>
+                  
+                  <button
+                    onClick={() => startQuiz(lesson)}
+                    className="px-8 py-4 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white rounded-2xl font-bold text-lg transition-all duration-300 shadow-2xl shadow-purple-500/25 hover:scale-105"
+                  >
+                    <span className="flex items-center gap-3">
+                      <span className="text-2xl">🚀</span>
+                      <span>Start Quiz / Bilaab Su'aalaha</span>
+                    </span>
+                  </button>
+                </div>
+              ) : (
+                <div>
+                  {/* Beautiful Progress Header */}
+                  <div className="mb-8">
+                    <div className="flex justify-between items-center mb-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-purple-600 rounded-xl flex items-center justify-center">
+                          <span className="text-white font-bold">
+                            {currentQuiz.currentQuestion + 1}
+                          </span>
+                        </div>
+                        <div>
+                          <p className="text-white font-medium">
+                            Question {currentQuiz.currentQuestion + 1} of {currentQuiz.questions.length}
+                          </p>
+                          <p className="text-gray-400 text-sm">
+                            Need {currentQuiz.questions.length}/{currentQuiz.questions.length} correct
+                          </p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-green-400 font-bold text-lg">
+                          Score: {currentQuiz.score}/{currentQuiz.questions.length}
+                        </p>
+                      </div>
+                    </div>
+                    
+                    {/* Beautiful Progress Bar */}
+                    <div className="w-full bg-gray-700/50 rounded-full h-3 overflow-hidden">
+                      <div 
+                        className="bg-gradient-to-r from-purple-600 to-pink-600 h-3 rounded-full transition-all duration-500 shadow-lg"
+                        style={{width: `${((currentQuiz.currentQuestion + 1) / currentQuiz.questions.length) * 100}%`}}
+                      ></div>
+                    </div>
+                  </div>
+
+                  {currentQuiz.currentQuestion < currentQuiz.questions.length && (
+                    <div>
+                      {/* Question Card */}
+                      <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-6 border border-white/10 mb-8">
+                        <h3 className="text-2xl font-bold text-white mb-4">
+                          {currentQuiz.questions[currentQuiz.currentQuestion].question}
+                        </h3>
+                        {showSomaliSupport && currentQuiz.questions[currentQuiz.currentQuestion].question_somali && (
+                          <div className="bg-green-600/10 rounded-xl p-4 border border-green-400/20">
+                            <p className="text-green-300 text-lg">
+                              🇸🇴 {currentQuiz.questions[currentQuiz.currentQuestion].question_somali}
+                            </p>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Answer Options */}
+                      <div className="space-y-4">
+                        {currentQuiz.questions[currentQuiz.currentQuestion].options.map((option, idx) => (
+                          <button
+                            key={idx}
+                            onClick={() => submitQuizAnswer(currentQuiz.currentQuestion, idx)}
+                            className="group w-full p-6 text-left bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl transition-all duration-300 hover:border-purple-400/50 hover:bg-white/10 hover:scale-[1.02] hover:shadow-lg hover:shadow-purple-500/10"
+                          >
+                            <div className="flex items-center gap-4">
+                              <div className="w-10 h-10 bg-purple-600/20 group-hover:bg-purple-600 rounded-xl flex items-center justify-center transition-colors">
+                                <span className="text-purple-300 group-hover:text-white font-bold text-lg">
+                                  {String.fromCharCode(65 + idx)}
+                                </span>
+                              </div>
+                              <span className="text-white text-lg font-medium group-hover:text-purple-200">
+                                {option}
+                              </span>
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {currentQuiz.currentQuestion >= currentQuiz.questions.length && (
+                    <div className="text-center">
+                      <div className="text-6xl mb-4">
+                        {quizCompleted ? '🎉' : '📚'}
+                      </div>
+                      <h3 className="text-2xl font-bold text-white mb-2">
+                        {quizCompleted ? 'Perfect Score!' : 'Try Again!'}
+                      </h3>
+                      <p className="text-gray-300 mb-4 text-lg">
+                        Final Score: {currentQuiz.score}/{currentQuiz.questions.length}
+                        {quizCompleted 
+                          ? <span className="text-green-400 block text-sm mt-2">🎉 Perfect score! You can complete the lesson!</span>
+                          : <span className="text-yellow-400 block text-sm mt-2">⚠️ Need {currentQuiz.questions.length}/{currentQuiz.questions.length} correct to pass</span>
+                        }
+                        {showSomaliSupport && (
+                          <span className="text-green-300 block text-sm mt-2">
+                            {quizCompleted 
+                              ? "🎉 Dhibac kaamil! Casharku dhammee kartaa!"
+                              : `⚠️ Waxaad u baahan tahay ${currentQuiz.questions.length}/${currentQuiz.questions.length} sax si aad u gudbatid`
+                            }
+                          </span>
+                        )}
+                      </p>
+                      {!quizCompleted && (
+                        <button
+                          onClick={() => startQuiz(lesson)}
+                          className="px-8 py-4 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white rounded-2xl font-bold text-lg transition-all duration-300 shadow-2xl shadow-purple-500/25 hover:scale-105"
+                        >
+                          <span className="flex items-center gap-3">
+                            <span className="text-2xl">🔄</span>
+                            <span>Try Again / Mar kale isku day</span>
+                          </span>
+                        </button>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Lesson Controls */}
+        <div className="flex flex-col sm:flex-row justify-between items-center pt-6 border-t border-gray-700 space-y-3 sm:space-y-0">
           <button
             onClick={() => setSelectedLesson(null)}
             className="w-full sm:w-auto flex items-center justify-center space-x-2 px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors order-2 sm:order-1"
@@ -1430,18 +1262,29 @@ export default function Lessons({ user }) {
           
           <button
             onClick={() => completeLesson(lesson)}
-            disabled={loading}
-            className="w-full sm:w-auto flex items-center justify-center space-x-2 px-4 sm:px-6 py-2 bg-green-600 hover:bg-green-700 disabled:bg-gray-600 disabled:cursor-not-allowed rounded-lg transition-colors order-1 sm:order-2"
+            disabled={loading || (lesson.is_enhanced && lesson.quiz_questions && !quizCompleted)}
+            className={`w-full sm:w-auto flex items-center justify-center space-x-2 px-6 py-3 rounded-xl font-medium transition-all duration-300 order-1 sm:order-2 ${
+              lesson.is_enhanced && lesson.quiz_questions && !quizCompleted
+                ? 'bg-gray-600 text-gray-400 cursor-not-allowed border border-gray-500'
+                : loading
+                ? 'bg-gray-600 text-gray-400 cursor-not-allowed'
+                : 'bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white shadow-lg shadow-green-500/25 hover:scale-105'
+            }`}
           >
             {loading ? (
               <>
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                <span className="text-white text-sm sm:text-base">Completing...</span>
+                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                <span>Completing...</span>
+              </>
+            ) : lesson.is_enhanced && lesson.quiz_questions && !quizCompleted ? (
+              <>
+                <span className="text-xl">🔒</span>
+                <span>Complete Quiz First</span>
               </>
             ) : (
               <>
-                <CheckCircle className="h-4 w-4" />
-                <span className="text-white text-sm sm:text-base">Complete Lesson</span>
+                <CheckCircle className="h-5 w-5" />
+                <span>Complete Lesson</span>
               </>
             )}
           </button>
@@ -1555,7 +1398,7 @@ export default function Lessons({ user }) {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
         {completionMessage && (
           <div className="mb-6 p-4 bg-green-500/10 border border-green-500/30 rounded-lg animate-pulse">
-            <p className="text-green-400 text-center font-medium">{completionMessage}</p>
+            <p className="text-green-400 text-center font-medium whitespace-pre-line">{completionMessage}</p>
           </div>
         )}
 
@@ -1643,7 +1486,7 @@ export default function Lessons({ user }) {
                           ) : isLocked ? (
                             <Lock className="h-5 w-5 sm:h-6 sm:w-6 text-gray-500" />
                           ) : (
-                            <span className="text-lg sm:text-xl">{getLessonIcon(lesson.type)}</span>
+                            <span className="text-lg sm:text-xl">📝</span>
                           )}
                         </div>
                         <div className="min-w-0 flex-1">
@@ -1709,4 +1552,4 @@ export default function Lessons({ user }) {
       </div>
     </div>
   )
-} 
+}
