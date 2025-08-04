@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo, useCallback } from 'react'
 import { Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { 
@@ -29,21 +29,23 @@ export default function Lessons({ user }) {
   const [audioPlaying, setAudioPlaying] = useState(null)
   const [playbackSpeed, setPlaybackSpeed] = useState(1)
 
-  useEffect(() => {
-    if (user) {
-      fetchLessons()
-      fetchUserProgress()
-    }
-  }, [user])
+  // Move useEffect after function definitions
 
-  const fetchLessons = async () => {
+  // 🚀 PERFORMANCE FIX 1: Only fetch essential fields, not heavy JSONB content
+  const fetchLessons = useCallback(async () => {
     try {
+      console.log('📡 Fetching lessons list (optimized)...')
+      const startTime = performance.now()
+      
       const { data, error } = await supabase
         .from('lessons')
-        .select('*')
+        .select('id, title, type, order_index, is_enhanced, is_active')  // ⚡ NO HEAVY JSONB!
         .eq('level', user.english_level)
         .eq('is_active', true)
         .order('order_index')
+
+      const endTime = performance.now()
+      console.log(`⚡ Lessons list fetched in ${Math.round(endTime - startTime)}ms (${data?.length || 0} lessons)`)
 
       if (error) {
         console.error('Error fetching lessons:', error)
@@ -55,14 +57,21 @@ export default function Lessons({ user }) {
       console.error('Error fetching lessons:', error)
       setLessons([])
     }
-  }
+  }, [user.english_level])
 
-  const fetchUserProgress = async () => {
+  // 🚀 PERFORMANCE FIX 2: Optimize progress fetching  
+  const fetchUserProgress = useCallback(async () => {
     try {
+      console.log('📡 Fetching user progress...')
+      const startTime = performance.now()
+      
       const { data, error } = await supabase
         .from('user_lesson_progress')
         .select('lesson_id, is_completed, completion_date, time_spent')
         .eq('user_id', user.id)
+
+      const endTime = performance.now()
+      console.log(`⚡ Progress fetched in ${Math.round(endTime - startTime)}ms`)
 
       if (error) {
         console.error('Error fetching user progress:', error)
@@ -80,7 +89,15 @@ export default function Lessons({ user }) {
     } finally {
       setLoading(false)
     }
-  }
+  }, [user.id])
+
+  // 🔧 useEffect after function definitions to avoid dependency issues
+  useEffect(() => {
+    if (user) {
+      fetchLessons()
+      fetchUserProgress()
+    }
+  }, [user, fetchLessons, fetchUserProgress])
 
   // NEW: Audio control functions with REAL speech
   const playAudio = (audioId, text) => {
@@ -197,20 +214,44 @@ export default function Lessons({ user }) {
 
   const startLesson = async (lesson) => {
     console.log('📖 Starting lesson:', lesson.title, 'Type:', lesson.type)
-    setSelectedLesson(lesson)
     
-    // NEW: Auto-enable Somali support for beginners
-    if (user?.english_level === 'beginner' && lesson.content_somali) {
-      setShowSomaliSupport(true)
-    } else {
-      setShowSomaliSupport(false)
-    }
+    // 🚀 PERFORMANCE FIX 7: Fetch full content only when lesson is opened
+    console.log('📡 Fetching full lesson content...')
+    const startTime = performance.now()
     
-    // NEW: Start quiz if lesson has enhanced features
-    if (lesson.is_enhanced && lesson.quiz_questions) {
-      setTimeout(() => {
-        startQuiz(lesson)
-      }, 1000) // Start quiz after 1 second
+    try {
+      const { data: fullLesson, error } = await supabase
+        .from('lessons')
+        .select('*')  // Now fetch all content including JSONB
+        .eq('id', lesson.id)
+        .single()
+      
+      const endTime = performance.now()
+      console.log(`⚡ Full lesson content fetched in ${Math.round(endTime - startTime)}ms`)
+      
+      if (error) {
+        console.error('Error fetching lesson content:', error)
+        return
+      }
+      
+      setSelectedLesson(fullLesson)
+      
+      // NEW: Auto-enable Somali support for beginners
+      if (user?.english_level === 'beginner' && fullLesson.content_somali) {
+        setShowSomaliSupport(true)
+      } else {
+        setShowSomaliSupport(false)
+      }
+    
+      // NEW: Start quiz if lesson has enhanced features
+      if (fullLesson.is_enhanced && fullLesson.quiz_questions) {
+        setTimeout(() => {
+          startQuiz(fullLesson)
+        }, 1000) // Start quiz after 1 second
+      }
+    } catch (fetchError) {
+      console.error('❌ Exception fetching lesson content:', fetchError)
+      return
     }
     
     // Use database function to start lesson safely
@@ -1409,6 +1450,57 @@ export default function Lessons({ user }) {
     )
   }
 
+  // 🚀 PERFORMANCE FIX 3: Memoize level info and lesson filtering (MOVED TO TOP)
+  const levelInfo = useMemo(() => getLevelInfo(user?.english_level), [user?.english_level])
+  
+  const { grammarLessons, vocabularyLessons } = useMemo(() => {
+    console.log('📊 Filtering lessons (memoized):', lessons.length)
+    const startTime = performance.now()
+    
+    const result = {
+      grammarLessons: lessons.filter(l => l.type === 'grammar'),
+      vocabularyLessons: lessons.filter(l => l.type === 'vocabulary'),
+    }
+    
+    const endTime = performance.now()
+    console.log(`⚡ Lesson filtering completed in ${Math.round(endTime - startTime)}ms`)
+    console.log(`📈 Grammar: ${result.grammarLessons.length}, Vocabulary: ${result.vocabularyLessons.length}`)
+    
+    return result
+  }, [lessons])
+
+  // 🚀 PERFORMANCE FIX 4: Pre-calculate lesson progress states (MOVED TO TOP)
+  const lessonProgressMap = useMemo(() => {
+    console.log('📊 Pre-calculating lesson progress (memoized)...')
+    const startTime = performance.now()
+    
+    const map = {}
+    
+    // Pre-calculate for grammar lessons
+    grammarLessons.forEach((lesson, index) => {
+      const progress = userProgress[lesson.id]
+      const isCompleted = progress?.is_completed
+      const isLocked = index > 0 && !userProgress[grammarLessons[index - 1]?.id]?.is_completed
+      
+      map[lesson.id] = { progress, isCompleted, isLocked, index, type: 'grammar' }
+    })
+    
+    // Pre-calculate for vocabulary lessons  
+    vocabularyLessons.forEach((lesson, index) => {
+      const progress = userProgress[lesson.id]
+      const isCompleted = progress?.is_completed
+      const isLocked = index > 0 && !userProgress[vocabularyLessons[index - 1]?.id]?.is_completed
+      
+      map[lesson.id] = { progress, isCompleted, isLocked, index, type: 'vocabulary' }
+    })
+    
+    const endTime = performance.now()
+    console.log(`⚡ Progress calculations completed in ${Math.round(endTime - startTime)}ms`)
+    
+    return map
+  }, [grammarLessons, vocabularyLessons, userProgress])
+
+  // 🔧 LOADING SCREEN: Moved after all hooks to prevent hook order violation
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-900 flex items-center justify-center">
@@ -1416,12 +1508,6 @@ export default function Lessons({ user }) {
       </div>
     )
   }
-
-  const levelInfo = getLevelInfo(user?.english_level)
-  const grammarLessons = lessons.filter(l => l.type === 'grammar')
-  const vocabularyLessons = lessons.filter(l => l.type === 'vocabulary')
-  // TEMPORARILY HIDDEN: Phrases lessons will be restored later
-  // const phraseLessons = lessons.filter(l => l.type === 'phrases')
 
   return (
     <div className="min-h-screen bg-gray-900">
@@ -1502,7 +1588,16 @@ export default function Lessons({ user }) {
               ].map((tab) => (
                 <button
                   key={tab.key}
-                  onClick={() => setActiveTab(tab.key)}
+                  onClick={() => {
+                    // 🚀 PERFORMANCE FIX 6: Monitor tab switch performance
+                    console.log(`🔄 Switching to ${tab.key} tab...`)
+                    const startTime = performance.now()
+                    setActiveTab(tab.key)
+                    requestAnimationFrame(() => {
+                      const endTime = performance.now()
+                      console.log(`⚡ Tab switch to ${tab.key} completed in ${Math.round(endTime - startTime)}ms`)
+                    })
+                  }}
                   className={`flex-1 flex items-center justify-center space-x-1 sm:space-x-2 py-2 sm:py-3 px-2 sm:px-4 rounded-md transition-colors ${
                     activeTab === tab.key
                       ? 'bg-blue-600 text-white'
@@ -1520,11 +1615,11 @@ export default function Lessons({ user }) {
 
             {/* Lessons Grid - Responsive */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-              {(activeTab === 'grammar' ? grammarLessons : vocabularyLessons).map((lesson, index) => {
-                const currentLessons = activeTab === 'grammar' ? grammarLessons : vocabularyLessons
-                const progress = userProgress[lesson.id]
-                const isCompleted = progress?.is_completed
-                const isLocked = index > 0 && !userProgress[currentLessons[index - 1]?.id]?.is_completed
+              {(activeTab === 'grammar' ? grammarLessons : vocabularyLessons).map((lesson) => {
+                // 🚀 PERFORMANCE FIX 5: Use pre-calculated progress data
+                const progressData = lessonProgressMap[lesson.id]
+                const { progress, isCompleted, isLocked } = progressData || {}
+                const index = progressData?.index || 0
 
                 return (
                   <div
