@@ -279,40 +279,59 @@ export default function Quiz({ user }) {
       {/* Header */}
       <header className="bg-gray-800 border-b border-gray-700">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div className="flex items-center space-x-4">
+          <div className="flex justify-between items-center h-16 min-h-16">
+            {/* Left Section - Navigation */}
+            <div className="flex items-center space-x-2 sm:space-x-4 flex-shrink-0">
               <Link
                 to="/"
-                className="flex items-center space-x-2 text-gray-400 hover:text-white transition-colors"
+                className="flex items-center space-x-1 sm:space-x-2 text-gray-400 hover:text-white transition-colors"
               >
-                <ArrowLeft className="h-5 w-5" />
-                <span>Dashboard</span>
+                <ArrowLeft className="h-4 w-4 sm:h-5 sm:w-5" />
+                <span className="hidden sm:inline">Dashboard</span>
+                <span className="sm:hidden">Home</span>
               </Link>
-              <div className="h-6 w-px bg-gray-600"></div>
-              <Trophy className="h-6 w-6 text-yellow-500" />
-              <h1 className="text-xl font-bold text-white">
+              <div className="hidden sm:block h-6 w-px bg-gray-600"></div>
+              <Trophy className="h-5 w-5 sm:h-6 sm:w-6 text-yellow-500 flex-shrink-0" />
+            </div>
+
+            {/* Center Section - Title */}
+            <div className="flex-1 flex justify-center px-2 sm:px-4">
+              <h1 className="text-sm sm:text-lg lg:text-xl font-bold text-white text-center truncate">
                 {showPartSelection 
-                  ? `${user?.english_level?.charAt(0).toUpperCase()}${user?.english_level?.slice(1)} Level - 20 Parts Challenge`
-                  : `Part ${currentPart}: ${quiz?.part_theme || 'Quiz'}`
+                  ? (
+                    <span className="hidden sm:inline">
+                      {user?.english_level?.charAt(0).toUpperCase()}{user?.english_level?.slice(1)} Level - 20 Parts Challenge
+                    </span>
+                  ) : (
+                    <span className="flex items-center space-x-1 sm:space-x-2">
+                      <span className="hidden sm:inline">Part {currentPart}:</span>
+                      <span className="sm:hidden">P{currentPart}:</span>
+                      <span className="truncate">{quiz?.part_theme || 'Quiz'}</span>
+                    </span>
+                  )
                 }
               </h1>
             </div>
             
-            {quizStatus === 'in_progress' && timeLeft !== null && (
-              <div className="flex items-center space-x-2 text-white">
-                <Clock className="h-5 w-5" />
-                <span className="font-mono text-lg">{formatTime(timeLeft)}</span>
-              </div>
-            )}
+            {/* Right Section - Timer and Actions */}
+            <div className="flex items-center space-x-2 sm:space-x-4 flex-shrink-0">
+              {quizStatus === 'in_progress' && timeLeft !== null && (
+                <div className="flex items-center space-x-1 sm:space-x-2 text-white">
+                  <Clock className="h-4 w-4 sm:h-5 sm:w-5" />
+                  <span className="font-mono text-sm sm:text-lg">{formatTime(timeLeft)}</span>
+                </div>
+              )}
 
-            {!showPartSelection && (
-              <button
-                onClick={backToPartSelection}
-                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors"
-              >
-                Back to Parts
-              </button>
-            )}
+              {!showPartSelection && (
+                <button
+                  onClick={backToPartSelection}
+                  className="bg-blue-600 hover:bg-blue-700 text-white px-2 sm:px-4 py-2 rounded-lg transition-colors text-xs sm:text-sm whitespace-nowrap"
+                >
+                  <span className="hidden sm:inline">Back to Parts</span>
+                  <span className="sm:hidden">Back</span>
+                </button>
+              )}
+            </div>
           </div>
         </div>
       </header>
