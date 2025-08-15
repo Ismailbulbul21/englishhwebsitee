@@ -1,16 +1,16 @@
 import { createClient } from '@supabase/supabase-js'
 
-// Use environment variables for security
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://kjsqpbctouxvhahlpzuw.supabase.co'
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imtqc3FwYmN0b3V4dmhhaGxwenV3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTM3MDMyMTMsImV4cCI6MjA2OTI3OTIxM30.-wt2dt3vKGYb1bTDBvLsnNjyoPc-f37iOioEOfzfb20'
+// Use environment variables for security - NO HARDCODED FALLBACKS
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
 
-// Validate environment variables
+// Validate environment variables - CRITICAL for security
 if (!supabaseUrl) {
-  throw new Error('Missing VITE_SUPABASE_URL environment variable')
+  throw new Error('Missing VITE_SUPABASE_URL environment variable. Please check your .env.local file.')
 }
 
 if (!supabaseAnonKey) {
-  throw new Error('Missing VITE_SUPABASE_ANON_KEY environment variable')
+  throw new Error('Missing VITE_SUPABASE_ANON_KEY environment variable. Please check your .env.local file.')
 }
 
 // Optimized client configuration for 100+ concurrent users

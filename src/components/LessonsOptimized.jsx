@@ -23,12 +23,18 @@ export default function LessonsOptimized({ user }) {
   const [completionMessage, setCompletionMessage] = useState('')
 
   // 🔥 PERFORMANCE FIX 1: Memoize filtered lessons
-  const { grammarLessons, vocabularyLessons, phraseLessons } = useMemo(() => {
+  const { grammarLessons, vocabularyLessons } = useMemo(() => {
     console.log('📊 Filtering lessons (memoized):', lessons.length)
     return {
       grammarLessons: lessons.filter(l => l.type === 'grammar'),
-      vocabularyLessons: lessons.filter(l => l.type === 'vocabulary'),
-      phraseLessons: lessons.filter(l => l.type === 'phrases')
+      vocabularyLessons: lessons.filter(l => l.type === 'vocabulary')
+      // NEW CATEGORIES: Will be added here when created
+      // conversationsLessons: lessons.filter(l => l.type === 'conversations'),
+      // homeLifeLessons: lessons.filter(l => l.type === 'home_life'),
+      // shoppingLessons: lessons.filter(l => l.type === 'shopping'),
+      // travelLessons: lessons.filter(l => l.type === 'travel'),
+      // healthLessons: lessons.filter(l => l.type === 'health'),
+      // schoolLessons: lessons.filter(l => l.type === 'school')
     }
   }, [lessons])
 
@@ -38,7 +44,7 @@ export default function LessonsOptimized({ user }) {
     const map = {}
     
     // Pre-calculate locked status for each lesson type
-    ;[grammarLessons, vocabularyLessons, phraseLessons].forEach(lessonGroup => {
+    ;[grammarLessons, vocabularyLessons].forEach(lessonGroup => {
       lessonGroup.forEach((lesson, index) => {
         const progress = userProgress[lesson.id]
         const isCompleted = progress?.is_completed
@@ -54,7 +60,7 @@ export default function LessonsOptimized({ user }) {
     })
     
     return map
-  }, [grammarLessons, vocabularyLessons, phraseLessons, userProgress])
+  }, [grammarLessons, vocabularyLessons, userProgress])
 
   // 🔥 PERFORMANCE FIX 3: Optimize database queries
   const fetchLessons = useCallback(async () => {
@@ -129,7 +135,13 @@ export default function LessonsOptimized({ user }) {
     switch (type) {
       case 'grammar': return '📝'
       case 'vocabulary': return '📚'
-      case 'phrases': return '💬'
+      // NEW CATEGORIES: Will be added here when created
+      // case 'conversations': return '🗣️'
+      // case 'home_life': return '🏠'
+      // case 'shopping': return '🛒'
+      // case 'travel': return '🚌'
+      // case 'health': return '🏥'
+      // case 'school': return '🎓'
       default: return '📖'
     }
   }, [])
@@ -282,10 +294,16 @@ export default function LessonsOptimized({ user }) {
     switch (activeTab) {
       case 'grammar': return grammarLessons
       case 'vocabulary': return vocabularyLessons
-      case 'phrases': return phraseLessons
+      // NEW CATEGORIES: Will be added here when created
+      // case 'conversations': return conversationsLessons
+      // case 'home_life': return homeLifeLessons
+      // case 'shopping': return shoppingLessons
+      // case 'travel': return travelLessons
+      // case 'health': return healthLessons
+      // case 'school': return schoolLessons
       default: return []
     }
-  }, [activeTab, grammarLessons, vocabularyLessons, phraseLessons])
+  }, [activeTab, grammarLessons, vocabularyLessons])
 
   if (loading) {
     return (
@@ -392,8 +410,14 @@ export default function LessonsOptimized({ user }) {
         <div className="flex space-x-1 bg-gray-800 p-1 rounded-lg mb-8">
           {[
             { key: 'grammar', label: 'Grammar', icon: '📝', count: grammarLessons.length },
-            { key: 'vocabulary', label: 'Vocabulary', icon: '📚', count: vocabularyLessons.length },
-            { key: 'phrases', label: 'Phrases', icon: '💬', count: phraseLessons.length }
+            { key: 'vocabulary', label: 'Vocabulary', icon: '📚', count: vocabularyLessons.length }
+            // NEW CATEGORIES: Will be added here when created
+            // { key: 'conversations', label: 'Daily Conversations', icon: '🗣️', count: conversationsLessons.length },
+            // { key: 'home_life', label: 'Home & Life', icon: '🏠', count: homeLifeLessons.length },
+            // { key: 'shopping', label: 'Shopping & Services', icon: '🛒', count: shoppingLessons.length },
+            // { key: 'travel', label: 'Travel & Transport', icon: '🚌', count: travelLessons.length },
+            // { key: 'health', label: 'Health & Safety', icon: '🏥', count: healthLessons.length },
+            // { key: 'school', label: 'School & Learning', icon: '🎓', count: schoolLessons.length }
           ].map((tab) => (
             <button
               key={tab.key}

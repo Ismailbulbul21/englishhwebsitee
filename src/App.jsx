@@ -10,6 +10,7 @@ import RandomChat from './components/RandomChat'
 import GroupDebates from './components/GroupDebates'
 import GroupChat from './components/GroupChat'
 import Progress from './components/Progress'
+import VoiceChallengePage from './components/VoiceChallengePage'
 import LoadingSpinner from './components/LoadingSpinner'
 
 function App() {
@@ -362,6 +363,7 @@ function App() {
             <Route path="/debates" element={<GroupDebates user={user} />} />
             <Route path="/group/:groupId" element={<GroupChat user={user} />} />
             <Route path="/progress" element={<Progress user={user} />} />
+            <Route path="/voice-challenge" element={<VoiceChallengePage user={user} />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         )}

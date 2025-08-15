@@ -389,7 +389,19 @@ export default function Lessons({ user }) {
     const somalicontent = lesson.content_somali || {}
     
     // 🎯 Get lesson-specific icon and color scheme
-    const getLessonTheme = (title) => {
+    const getLessonTheme = (title, type) => {
+      // Handle new lesson types first
+      if (type === 'conversations') {
+        return { icon: '🗣️', color: 'blue', gradient: 'from-blue-600/20 via-purple-600/20 to-indigo-600/20' }
+      } else if (type === 'health') {
+        return { icon: '🏥', color: 'red', gradient: 'from-red-600/20 via-pink-600/20 to-rose-600/20' }
+      } else if (type === 'travel') {
+        return { icon: '✈️', color: 'green', gradient: 'from-green-600/20 via-emerald-600/20 to-teal-600/20' }
+      } else if (type === 'work') {
+        return { icon: '💼', color: 'purple', gradient: 'from-purple-600/20 via-violet-600/20 to-indigo-600/20' }
+      }
+      
+      // Handle existing grammar lessons
       if (title.includes('Present Tense') || title.includes('To Be')) {
         return { icon: '📝', color: 'blue', gradient: 'from-blue-600/20 via-purple-600/20 to-indigo-600/20' }
       } else if (title.includes('Questions')) {
@@ -429,7 +441,7 @@ export default function Lessons({ user }) {
       }
     }
     
-    const theme = getLessonTheme(lesson.title)
+    const theme = getLessonTheme(lesson.title, lesson.type)
     
     return (
       <div className="space-y-8">
@@ -445,7 +457,12 @@ export default function Lessons({ user }) {
                 <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold text-white mb-2">{lesson.title}</h2>
                 <div className="flex flex-wrap justify-center sm:justify-start items-center gap-2 sm:gap-3">
                   <span className={`px-2 sm:px-3 py-1 bg-${theme.color}-500/20 text-${theme.color}-300 rounded-full text-xs sm:text-sm font-medium border border-${theme.color}-400/30`}>
-                    Grammar
+                    {lesson.type === 'conversations' ? 'Daily Conversations' :
+                     lesson.type === 'health' ? 'Health & Safety' :
+                     lesson.type === 'travel' ? 'Travel & Transport' :
+                     lesson.type === 'work' ? 'Job & Work' :
+                     lesson.type === 'grammar' ? 'Grammar' :
+                     lesson.type === 'vocabulary' ? 'Vocabulary' : 'Lesson'}
                   </span>
                   <span className="px-2 sm:px-3 py-1 bg-green-500/20 text-green-300 rounded-full text-xs sm:text-sm font-medium border border-green-400/30">
                     Beginner
@@ -670,6 +687,66 @@ export default function Lessons({ user }) {
           </div>
         )}
 
+        {/* 🗣️ PHRASES CONTENT FOR NEW LESSON TYPES */}
+        {['conversations', 'health', 'travel', 'work'].includes(lesson.type) && content.phrases && (
+          <div className={`bg-gradient-to-br from-${theme.color}-600/10 to-indigo-600/10 backdrop-blur-sm rounded-xl sm:rounded-2xl border border-${theme.color}-500/30 overflow-hidden`}>
+            <div className={`bg-gradient-to-r from-${theme.color}-600/20 to-indigo-600/20 p-4 sm:p-6 border-b border-${theme.color}-400/20`}>
+              <h3 className="text-lg sm:text-xl lg:text-2xl font-bold text-white flex items-center gap-2 sm:gap-3 justify-center sm:justify-start">
+                <div className={`w-6 h-6 sm:w-8 sm:h-8 bg-${theme.color}-500 rounded-lg sm:rounded-xl flex items-center justify-center`}>
+                  <span className="text-sm sm:text-lg">💬</span>
+                </div>
+                <span className="hidden sm:inline">Essential Phrases</span>
+                <span className="sm:hidden">Phrases</span>
+              </h3>
+              <p className={`text-${theme.color}-200 mt-2 text-sm sm:text-base text-center sm:text-left`}>Learn practical phrases for {lesson.type === 'conversations' ? 'daily conversations' : lesson.type === 'health' ? 'health situations' : lesson.type === 'travel' ? 'travel and transport' : 'work and interviews'}</p>
+            </div>
+            
+            <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
+              {content.phrases.map((phrase, index) => (
+                <div key={index} className="group bg-white/5 backdrop-blur-sm rounded-lg sm:rounded-2xl p-4 sm:p-6 border border-white/10 hover:border-indigo-400/30 transition-all duration-300 hover:bg-white/10">
+                  {/* English Phrase */}
+                  <div className="mb-4">
+                    <h4 className="text-lg sm:text-xl font-bold text-white mb-2 text-center sm:text-left">{phrase.english}</h4>
+                    <p className="text-gray-300 text-sm sm:text-base text-center sm:text-left">{phrase.meaning}</p>
+                    <p className="text-gray-400 text-xs sm:text-sm text-center sm:text-left mt-1">When to use: {phrase.when_to_use}</p>
+                  </div>
+                  
+                  {/* Example Conversation */}
+                  {phrase.example_conversation && (
+                    <div className="bg-indigo-600/10 rounded-lg sm:rounded-xl p-3 sm:p-4 border border-indigo-400/20">
+                      <h5 className="text-indigo-300 font-medium mb-3 text-center sm:text-left">Example Conversation:</h5>
+                      <div className="space-y-2">
+                        {Object.entries(phrase.example_conversation).map(([person, text], idx) => (
+                          <div key={idx} className="flex items-start gap-3">
+                            <span className="text-indigo-400 font-medium text-sm flex-shrink-0">
+                              {person === 'person1' ? '👤 Person 1:' : '👤 Person 2:'}
+                            </span>
+                            <p className="text-white text-sm sm:text-base">{text}</p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* Audio Button */}
+                  <div className="flex justify-center sm:justify-start mt-4">
+                    <button
+                      onClick={() => playAudio(`phrase-${index}`, phrase.english)}
+                      className={`p-3 sm:p-4 rounded-lg sm:rounded-xl transition-all duration-300 group-hover:scale-110 ${
+                        audioPlaying === `phrase-${index}`
+                          ? `bg-${theme.color}-600 text-white shadow-lg shadow-${theme.color}-500/25`
+                          : 'bg-gray-700 hover:bg-indigo-600 text-gray-300 hover:text-white'
+                      }`}
+                    >
+                      <span className="text-lg sm:text-2xl">🔊</span>
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* 📱 MODERN EXAMPLES SECTION - MOBILE RESPONSIVE */}
         {content.modern_examples && (
           <div className="bg-gradient-to-br from-emerald-600/10 to-teal-600/10 backdrop-blur-sm rounded-xl sm:rounded-2xl border border-emerald-500/30 overflow-hidden">
@@ -814,7 +891,7 @@ export default function Lessons({ user }) {
                   {/* Example Sentence */}
                   <div className="flex flex-col sm:flex-row sm:items-center gap-4 mb-4">
                     <div className="flex-1">
-                      <p className="text-lg sm:text-xl lg:text-2xl font-semibold text-white mb-2 text-center sm:text-left">{example}</p>
+                      <p className="text-lg sm:text-xl lg:text-2xl font-semibold text-white mb-2 text-center sm:text-left">{typeof example === 'string' ? example : example.english || ''}</p>
                       
                       {/* 🗣️ SOMALI PHONETIC GUIDE */}
                       <div className="bg-purple-600/10 rounded-lg sm:rounded-xl p-3 sm:p-4 border border-purple-400/20">
@@ -826,13 +903,14 @@ export default function Lessons({ user }) {
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                           <div>
                             <p className="text-gray-400 text-xs sm:text-sm mb-1 text-center sm:text-left">English Phonetics:</p>
-                            <p className="text-blue-300 font-mono text-sm sm:text-lg text-center sm:text-left">/{example.toLowerCase().replace(/[.,!?]/g, '')}/</p>
+                            <p className="text-blue-300 font-mono text-sm sm:text-lg text-center sm:text-left">/{typeof example === 'string' ? example.toLowerCase().replace(/[.,!?]/g, '') : (example.english || '').toLowerCase().replace(/[.,!?]/g, '')}/</p>
                           </div>
                           {showSomaliSupport && (
                             <div>
                               <p className="text-gray-400 text-xs sm:text-sm mb-1 text-center sm:text-left">Somali Phonetics:</p>
                               <p className="text-green-300 font-mono text-sm sm:text-lg text-center sm:text-left">
-                                {example.toLowerCase()
+                                {(typeof example === 'string' ? example : example.english || '')
+                                  .toLowerCase()
                                   .replace(/working/g, 'waarking')
                                   .replace(/friend/g, 'freend')
                                   .replace(/streaming/g, 'siriiming')
@@ -851,7 +929,7 @@ export default function Lessons({ user }) {
                     
                     {/* Audio Button */}
                     <button
-                      onClick={() => playAudio(`example-${idx}`, example)}
+                                              onClick={() => playAudio(`example-${idx}`, typeof example === 'string' ? example : example.english || '')}
                       className={`p-3 sm:p-4 rounded-lg sm:rounded-2xl transition-all duration-300 group-hover:scale-110 self-center sm:self-auto ${
                         audioPlaying === `example-${idx}`
                           ? 'bg-cyan-600 text-white shadow-2xl shadow-cyan-500/25 scale-110'
@@ -1318,18 +1396,19 @@ export default function Lessons({ user }) {
   // 🚀 PERFORMANCE FIX 3: Memoize level info and lesson filtering (MOVED TO TOP)
   const levelInfo = useMemo(() => getLevelInfo(user?.english_level), [user?.english_level])
   
-  const { grammarLessons, vocabularyLessons } = useMemo(() => {
+  const { grammarLessons, vocabularyLessons, lifeSkillsLessons } = useMemo(() => {
     console.log('📊 Filtering lessons (memoized):', lessons.length)
     const startTime = performance.now()
     
     const result = {
       grammarLessons: lessons.filter(l => l.type === 'grammar'),
       vocabularyLessons: lessons.filter(l => l.type === 'vocabulary'),
+      lifeSkillsLessons: lessons.filter(l => ['conversations', 'health', 'travel', 'work'].includes(l.type))
     }
     
     const endTime = performance.now()
     console.log(`⚡ Lesson filtering completed in ${Math.round(endTime - startTime)}ms`)
-    console.log(`📈 Grammar: ${result.grammarLessons.length}, Vocabulary: ${result.vocabularyLessons.length}`)
+    console.log(`📈 Grammar: ${result.grammarLessons.length}, Vocabulary: ${result.vocabularyLessons.length}, Life Skills: ${result.lifeSkillsLessons.length}`)
     
     return result
   }, [lessons])
@@ -1359,11 +1438,20 @@ export default function Lessons({ user }) {
       map[lesson.id] = { progress, isCompleted, isLocked, index, type: 'vocabulary' }
     })
     
+    // Pre-calculate for life skills lessons (no locking between different types)
+    lifeSkillsLessons.forEach((lesson, index) => {
+      const progress = userProgress[lesson.id]
+      const isCompleted = progress?.is_completed
+      const isLocked = false // Life skills lessons are not locked
+      
+      map[lesson.id] = { progress, isCompleted, isLocked, index, type: lesson.type }
+    })
+    
     const endTime = performance.now()
     console.log(`⚡ Progress calculations completed in ${Math.round(endTime - startTime)}ms`)
     
     return map
-  }, [grammarLessons, vocabularyLessons, userProgress])
+  }, [grammarLessons, vocabularyLessons, lifeSkillsLessons, userProgress])
 
   // 🔧 LOADING SCREEN: Moved after all hooks to prevent hook order violation
   if (loading) {
@@ -1398,7 +1486,7 @@ export default function Lessons({ user }) {
                 <h1 className="text-sm sm:text-lg lg:text-xl font-bold text-white truncate">
                   <span className="hidden sm:inline">Casharrada</span>
                   <span className="sm:hidden">Lessons</span>
-                  <span className="hidden lg:inline"> (Phrases Coming Soon)</span>
+                  <span className="hidden lg:inline"> (Life Skills Available!)</span>
                 </h1>
               </div>
             </div>
@@ -1447,9 +1535,8 @@ export default function Lessons({ user }) {
             <div className="flex space-x-1 bg-gray-800 p-1 rounded-lg mb-6 sm:mb-8">
               {[
                 { key: 'grammar', label: 'Grammar', icon: '📝', shortLabel: 'Grammar' },
-                { key: 'vocabulary', label: 'Vocabulary', icon: '📚', shortLabel: 'Vocab' }
-                // TEMPORARILY HIDDEN: Phrases lessons will be restored later
-                // { key: 'phrases', label: 'Phrases', icon: '💬', shortLabel: 'Phrases' }
+                { key: 'vocabulary', label: 'Vocabulary', icon: '📚', shortLabel: 'Vocab' },
+                { key: 'life_skills', label: 'Life Skills', icon: '🌟', shortLabel: 'Skills' }
               ].map((tab) => (
                 <button
                   key={tab.key}
@@ -1478,9 +1565,54 @@ export default function Lessons({ user }) {
               ))}
             </div>
 
+            {/* Life Skills Sub-Categories - Only show when Life Skills tab is active */}
+            {activeTab === 'life_skills' && (
+              <div className="mb-6 sm:mb-8">
+                <h3 className="text-lg sm:text-xl font-bold text-white mb-4 text-center sm:text-left">Choose Your Category</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+                  {[
+                    { key: 'conversations', label: 'Daily Conversations', icon: '🗣️', count: lifeSkillsLessons.filter(l => l.type === 'conversations').length, color: 'blue' },
+                    { key: 'health', label: 'Hospital & Health', icon: '🏥', count: lifeSkillsLessons.filter(l => l.type === 'health').length, color: 'red' },
+                    { key: 'travel', label: 'Travel & Transport', icon: '✈️', count: lifeSkillsLessons.filter(l => l.type === 'travel').length, color: 'green' },
+                    { key: 'work', label: 'Job Interview & Work', icon: '💼', count: lifeSkillsLessons.filter(l => l.type === 'work').length, color: 'purple' }
+                  ].map((category) => (
+                    <div
+                      key={category.key}
+                      className={`bg-gray-800 rounded-xl p-4 sm:p-6 border border-gray-700 hover:border-${category.color}-500/50 transition-all duration-300 cursor-pointer hover:scale-105`}
+                      onClick={() => setActiveTab(category.key)}
+                    >
+                      <div className="text-center">
+                        <div className={`w-16 h-16 mx-auto mb-3 bg-gradient-to-br from-${category.color}-500 to-${category.color}-600 rounded-xl flex items-center justify-center text-2xl`}>
+                          {category.icon}
+                        </div>
+                        <h4 className="text-lg font-semibold text-white mb-2">{category.label}</h4>
+                        <p className="text-gray-400 text-sm">{category.count} lessons</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {/* Lessons Grid - Responsive */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-              {(activeTab === 'grammar' ? grammarLessons : vocabularyLessons).map((lesson) => {
+            {activeTab === 'life_skills' ? (
+              // Show message when Life Skills tab is active
+              <div className="col-span-full text-center py-12">
+                <div className="bg-gray-800 rounded-xl p-8 border border-gray-700">
+                  <div className="text-6xl mb-4">🌟</div>
+                  <h3 className="text-2xl font-bold text-white mb-4">Choose Your Learning Category</h3>
+                  <p className="text-gray-300 text-lg mb-6">Click on one of the categories above to start learning practical English phrases for real-life situations.</p>
+                  <div className="flex justify-center">
+                    <div className="text-4xl">👇</div>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+                {(activeTab === 'grammar' ? grammarLessons : 
+                  activeTab === 'vocabulary' ? vocabularyLessons : 
+                  ['conversations', 'health', 'travel', 'work'].includes(activeTab) ? lifeSkillsLessons.filter(l => l.type === activeTab) :
+                  []).map((lesson) => {
                 // 🚀 PERFORMANCE FIX 5: Use pre-calculated progress data
                 const progressData = lessonProgressMap[lesson.id]
                 const { progress, isCompleted, isLocked } = progressData || {}
@@ -1544,22 +1676,29 @@ export default function Lessons({ user }) {
                 )
               })}
             </div>
+            )}
 
             {/* Progress Summary - Responsive */}
             <div className="mt-8 sm:mt-12 bg-gray-800 rounded-xl p-4 sm:p-6 border border-gray-700">
               <h3 className="text-lg sm:text-xl font-bold text-white mb-4 text-center sm:text-left">Your Progress</h3>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
                 <div className="text-center p-4 bg-gray-700/50 rounded-lg">
                   <div className="text-2xl sm:text-3xl font-bold text-blue-400">
                     {Object.values(userProgress).filter(p => p.is_completed).length}
                   </div>
-                  <div className="text-sm sm:text-base text-gray-400 mt-1">Lessons Completed</div>
+                  <div className="text-sm sm:text-base text-gray-400 mt-1">Total Completed</div>
                 </div>
                 <div className="text-center p-4 bg-gray-700/50 rounded-lg">
                   <div className="text-2xl sm:text-3xl font-bold text-green-400">
                     {Math.round((Object.values(userProgress).filter(p => p.is_completed).length / lessons.length) * 100) || 0}%
                   </div>
-                  <div className="text-sm sm:text-base text-gray-400 mt-1">Course Progress</div>
+                  <div className="text-sm sm:text-base text-gray-400 mt-1">Overall Progress</div>
+                </div>
+                <div className="text-center p-4 bg-gray-700/50 rounded-lg">
+                  <div className="text-2xl sm:text-3xl font-bold text-purple-400">
+                    {lifeSkillsLessons.filter(l => userProgress[l.id]?.is_completed).length}
+                  </div>
+                  <div className="text-sm sm:text-base text-gray-400 mt-1">Life Skills</div>
                 </div>
                 <div className="text-center p-4 bg-gray-700/50 rounded-lg">
                   <div className="text-2xl sm:text-3xl font-bold text-yellow-400">

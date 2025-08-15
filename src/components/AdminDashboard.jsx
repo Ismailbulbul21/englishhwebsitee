@@ -19,7 +19,8 @@ import {
   RefreshCw,
   Timer,
   StopCircle,
-  Activity
+  Activity,
+  Download
 } from 'lucide-react'
 
 export default function AdminDashboard({ user }) {
@@ -42,11 +43,23 @@ export default function AdminDashboard({ user }) {
   const [activeGroups, setActiveGroups] = useState([])
   const [loadingActiveGroups, setLoadingActiveGroups] = useState(false)
   
+  // State for voice challenges management
+  const [voiceChallenges, setVoiceChallenges] = useState([])
+  const [loadingVoiceChallenges, setLoadingVoiceChallenges] = useState(false)
+  
+  // State for voice submissions management
+  const [voiceSubmissions, setVoiceSubmissions] = useState([])
+  const [loadingVoiceSubmissions, setLoadingVoiceSubmissions] = useState(false)
+  const [selectedChallenge, setSelectedChallenge] = useState(null)
+  const [selectedLevel, setSelectedLevel] = useState('all')
+  
   // Modal states
   const [showScheduleModal, setShowScheduleModal] = useState(false)
   const [showTopicModal, setShowTopicModal] = useState(false)
+  const [showVoiceChallengeModal, setShowVoiceChallengeModal] = useState(false)
   const [editingSchedule, setEditingSchedule] = useState(null)
   const [editingTopic, setEditingTopic] = useState(null)
+  const [editingVoiceChallenge, setEditingVoiceChallenge] = useState(null)
   
   // Form states - simplified to only countdown defaults
   const [scheduleForm, setScheduleForm] = useState({
@@ -62,6 +75,52 @@ export default function AdminDashboard({ user }) {
     level: 'beginner',
     is_active: true
   })
+
+  const [voiceChallengeForm, setVoiceChallengeForm] = useState({
+    title: '',
+    description: '',
+    question: '',
+    level: 'beginner',
+    max_duration_seconds: 60,
+    points_available: 10,
+    challenge_date: new Date().toISOString().split('T')[0],
+    start_time: '',
+    end_time: '',
+    is_active: true
+  })
+
+  // Function to get a random unused question for selected level
+  const getRandomQuestionForLevel = async (level) => {
+    try {
+      const { data, error } = await supabase
+        .from('voice_challenge_questions')
+        .select('question')
+        .eq('level', level)
+        .eq('is_used', false)
+        .limit(1)
+      
+      if (error) {
+        console.error('Error fetching question:', error)
+        return
+      }
+
+      if (data && data.length > 0) {
+        // Auto-fill the question field
+        setVoiceChallengeForm(prev => ({
+          ...prev,
+          question: data[0].question
+        }))
+      } else {
+        // No more questions available for this level
+        setVoiceChallengeForm(prev => ({
+          ...prev,
+          question: 'No more questions available for this level. Please write your own question.'
+        }))
+      }
+    } catch (error) {
+      console.error('Error getting question:', error)
+    }
+  }
 
   useEffect(() => {
     if (user) {
@@ -136,6 +195,34 @@ export default function AdminDashboard({ user }) {
     }
   }
 
+  const loadVoiceChallenges = async () => {
+    setLoadingVoiceChallenges(true)
+    setError('')
+    try {
+      console.log('🔄 Loading voice challenges...')
+      
+      const { data, error } = await supabase
+        .from('voice_challenges')
+        .select('*')
+        .order('created_at', { ascending: false })
+      
+      if (error) {
+        console.error('❌ Voice challenges error:', error)
+        setError(`Failed to load voice challenges: ${error.message}`)
+        return
+      }
+
+      console.log('✅ Voice challenges loaded:', data)
+      setVoiceChallenges(data || [])
+      
+    } catch (error) {
+      console.error('❌ Voice challenges error:', error)
+      setError(`Failed to load voice challenges: ${error.message}`)
+    } finally {
+      setLoadingVoiceChallenges(false)
+    }
+  }
+
   const saveSchedule = async () => {
     setSaving(true)
     setError('')
@@ -201,6 +288,71 @@ export default function AdminDashboard({ user }) {
     }
   }
 
+  const saveVoiceChallenge = async () => {
+    setSaving(true)
+    setError('')
+    try {
+      console.log('🔄 Saving voice challenge...')
+      
+      const { data, error } = await supabase.rpc('create_voice_challenge', {
+        title_param: voiceChallengeForm.title,
+        description_param: voiceChallengeForm.description,
+        question_param: voiceChallengeForm.question,
+        level_param: voiceChallengeForm.level,
+        max_duration_seconds_param: voiceChallengeForm.max_duration_seconds,
+        points_available_param: voiceChallengeForm.points_available,
+        challenge_date_param: voiceChallengeForm.challenge_date,
+        start_time_param: voiceChallengeForm.start_time || null,
+        end_time_param: voiceChallengeForm.end_time || null,
+        is_active_param: voiceChallengeForm.is_active,
+        created_by_param: user.id
+      })
+
+      if (error) {
+        console.error('❌ Error saving challenge:', error)
+        throw error
+      }
+
+      if (data?.success) {
+        // Mark the used question as used in the database
+        try {
+          await supabase
+            .from('voice_challenge_questions')
+            .update({ is_used: true })
+            .eq('question', voiceChallengeForm.question)
+            .eq('level', voiceChallengeForm.level)
+        } catch (updateError) {
+          console.error('Warning: Could not mark question as used:', updateError)
+          // Don't fail the save if this update fails
+        }
+
+        setShowVoiceChallengeModal(false)
+        setEditingVoiceChallenge(null)
+        setVoiceChallengeForm({
+          title: '',
+          description: '',
+          question: '',
+          level: 'beginner',
+          max_duration_seconds: 60,
+          points_available: 10,
+          challenge_date: new Date().toISOString().split('T')[0],
+          start_time: '',
+          end_time: '',
+          is_active: true
+        })
+        await loadVoiceChallenges()
+        console.log('✅ Voice challenge saved successfully')
+      } else {
+        setError(data?.error || 'Failed to save voice challenge')
+      }
+    } catch (error) {
+      console.error('❌ Error saving voice challenge:', error)
+      setError(`Failed to save voice challenge: ${error.message}`)
+    } finally {
+      setSaving(false)
+    }
+  }
+
   const deleteTopic = async (topicId) => {
     if (!confirm('Are you sure you want to delete this topic?')) return
 
@@ -222,6 +374,25 @@ export default function AdminDashboard({ user }) {
     } catch (error) {
       console.error('❌ Error deleting topic:', error)
       setError('Failed to delete topic')
+      }
+  }
+
+  const deleteVoiceChallenge = async (challengeId) => {
+    if (!confirm('Are you sure you want to delete this voice challenge?')) return
+
+    try {
+      const { error } = await supabase
+        .from('voice_challenges')
+        .delete()
+        .eq('id', challengeId)
+
+      if (error) throw error
+
+      await loadVoiceChallenges()
+      console.log('✅ Voice challenge deleted successfully')
+    } catch (error) {
+      console.error('❌ Error deleting voice challenge:', error)
+      setError('Failed to delete voice challenge')
     }
   }
 
@@ -285,6 +456,22 @@ export default function AdminDashboard({ user }) {
     }
   }, [activeTab, user])
 
+  // Load voice challenges when tab changes to voice-challenges
+  useEffect(() => {
+    if (activeTab === 'voice-challenges' && user) {
+      loadVoiceChallenges()
+    }
+  }, [activeTab, user])
+
+  // Load voice submissions when a challenge is selected
+  useEffect(() => {
+    console.log('🔄 useEffect triggered - selectedChallenge:', selectedChallenge, 'activeTab:', activeTab, 'selectedLevel:', selectedLevel)
+    if (selectedChallenge && activeTab === 'voice-submissions') {
+      console.log('✅ Calling loadVoiceSubmissions with challenge:', selectedChallenge, 'level:', selectedLevel)
+      loadVoiceSubmissions(selectedChallenge, selectedLevel)
+    }
+  }, [selectedChallenge, activeTab, selectedLevel])
+
   const editSchedule = (schedule) => {
     setEditingSchedule(schedule)
     setScheduleForm({
@@ -305,6 +492,43 @@ export default function AdminDashboard({ user }) {
       is_active: topic.is_active
     })
     setShowTopicModal(true)
+  }
+
+  const editVoiceChallenge = (challenge) => {
+    setEditingVoiceChallenge(challenge)
+    setVoiceChallengeForm({
+      title: challenge.title,
+      description: challenge.description || '',
+      question: challenge.question || '',
+      level: challenge.level,
+      max_duration_seconds: challenge.max_duration_seconds || 60,
+      points_available: challenge.points_available || 10,
+      challenge_date: challenge.challenge_date,
+      start_time: challenge.start_time ? challenge.start_time.split('T')[1].substring(0, 5) : '',
+      end_time: challenge.end_time ? challenge.end_time.split('T')[1].substring(0, 5) : '',
+      is_active: challenge.is_active
+    })
+    setShowVoiceChallengeModal(true)
+  }
+
+  // Function to handle opening the voice challenge modal
+  const openVoiceChallengeModal = () => {
+    setEditingVoiceChallenge(null)
+    setVoiceChallengeForm({
+      title: '',
+      description: '',
+      question: '',
+      level: 'beginner',
+      max_duration_seconds: 60,
+      points_available: 10,
+      challenge_date: new Date().toISOString().split('T')[0],
+      start_time: '',
+      end_time: '',
+      is_active: true
+    })
+    setShowVoiceChallengeModal(true)
+    // Auto-fill question for beginner level when modal opens
+    setTimeout(() => getRandomQuestionForLevel('beginner'), 100)
   }
 
   const getLevelColor = (level) => {
@@ -333,6 +557,124 @@ export default function AdminDashboard({ user }) {
       case 'full': return 'text-blue-400 bg-blue-500/10 border-blue-500/30'
       default: return 'text-gray-400 bg-gray-500/10 border-gray-500/30'
     }
+  }
+
+  // Load voice submissions for a specific challenge
+  const loadVoiceSubmissions = async (challengeId, level = 'all') => {
+    if (!challengeId) return
+    
+    console.log('🔄 Loading voice submissions for challenge:', challengeId, 'level:', level)
+    setLoadingVoiceSubmissions(true)
+    try {
+      // First, get all voice submissions for the challenge
+      let query = supabase
+        .from('voice_submissions')
+        .select(`
+          *,
+          voice_challenges!inner(
+            level
+          )
+        `)
+        .eq('challenge_id', challengeId)
+        .order('submitted_at', { ascending: false })
+
+      // Filter by level if specified
+      if (level !== 'all') {
+        query = query.eq('voice_challenges.level', level)
+      }
+
+      const { data: submissions, error: submissionsError } = await query
+
+      if (submissionsError) throw submissionsError
+
+      console.log('📊 Raw submissions data:', submissions)
+
+      if (!submissions || submissions.length === 0) {
+        console.log('❌ No submissions found')
+        setVoiceSubmissions([])
+        return
+      }
+
+      // Get user IDs from submissions
+      const userIds = submissions.map(s => s.user_id)
+      console.log('👥 User IDs from submissions:', userIds)
+
+      // Fetch user names for these users
+      const { data: userNames, error: namesError } = await supabase
+        .from('user_full_names')
+        .select('user_id, first_name, last_name')
+        .in('user_id', userIds)
+
+      if (namesError) throw namesError
+
+      console.log('👤 User names data:', userNames)
+
+      // Create a map of user_id to names
+      const userNamesMap = {}
+      if (userNames) {
+        userNames.forEach(user => {
+          userNamesMap[user.user_id] = {
+            first_name: user.first_name || 'Unknown',
+            last_name: user.last_name || 'User'
+          }
+        })
+      }
+
+      console.log('🗺️ User names map:', userNamesMap)
+
+      // Transform submissions with user names and level info
+      const transformedData = submissions.map(submission => ({
+        ...submission,
+        first_name: userNamesMap[submission.user_id]?.first_name || 'Unknown',
+        last_name: userNamesMap[submission.user_id]?.last_name || 'User',
+        challenge_level: submission.voice_challenges?.level || 'unknown'
+      }))
+
+      console.log('✅ Final transformed data:', transformedData)
+      setVoiceSubmissions(transformedData)
+    } catch (error) {
+      console.error('❌ Error loading voice submissions:', error)
+      alert('Failed to load voice submissions')
+    } finally {
+      setLoadingVoiceSubmissions(false)
+    }
+  }
+
+  // Select a winner for a voice challenge
+  const selectWinner = async (submissionId) => {
+    try {
+      // Get the submission details
+      const submission = voiceSubmissions.find(s => s.id === submissionId)
+      if (!submission) return
+
+      console.log('🏆 Selecting winner:', submission)
+
+      // Call the database function to announce winner
+      const { error } = await supabase.rpc('announce_daily_winner', {
+        p_challenge_id: submission.challenge_id,
+        p_winner_user_id: submission.user_id,
+        p_winner_full_name: `${submission.first_name} ${submission.last_name}`
+      })
+
+      if (error) throw error
+
+      // Refresh submissions with current level filter
+      loadVoiceSubmissions(selectedChallenge, selectedLevel)
+      alert(`Winner selected successfully! ${submission.first_name} ${submission.last_name} is now the winner for the ${submission.challenge_level} level challenge.`)
+    } catch (error) {
+      console.error('Error selecting winner:', error)
+      alert('Failed to select winner')
+    }
+  }
+
+  // Download voice submission audio
+  const downloadSubmission = (submission) => {
+    const link = document.createElement('a')
+    link.href = submission.voice_file_url
+    link.download = `voice_submission_${submission.id}.webm`
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
   }
 
   if (loading) {
@@ -413,6 +755,8 @@ export default function AdminDashboard({ user }) {
             { id: 'active-groups', label: 'Active Groups', icon: Activity },
             { id: 'schedules', label: 'Countdown Defaults', icon: Clock },
             { id: 'topics', label: 'Topics', icon: MessageSquare },
+            { id: 'voice-challenges', label: 'Voice Challenges', icon: MessageSquare },
+            { id: 'voice-submissions', label: 'Voice Submissions', icon: MessageSquare },
             { id: 'users', label: 'Users', icon: Users },
             { id: 'settings', label: 'Settings', icon: Settings }
           ].map(tab => (
@@ -715,6 +1059,219 @@ export default function AdminDashboard({ user }) {
                 </div>
               ))}
             </div>
+          </div>
+        )}
+
+        {/* Voice Challenges Tab */}
+        {activeTab === 'voice-challenges' && (
+          <div className="space-y-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <h2 className="text-xl sm:text-2xl font-light text-white">Voice Challenges</h2>
+              <button
+                onClick={openVoiceChallengeModal}
+                className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-xl transition-colors flex items-center justify-center space-x-2"
+              >
+                <Plus className="h-4 w-4" />
+                <span>Add Voice Challenge</span>
+              </button>
+            </div>
+
+            {loadingVoiceChallenges ? (
+              <div className="text-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+                <p className="text-white/60">Loading voice challenges...</p>
+              </div>
+            ) : voiceChallenges.length > 0 ? (
+              <div className="space-y-4">
+                {voiceChallenges.map((challenge) => (
+                  <div key={challenge.id} className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-6">
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center space-x-3 mb-2">
+                          <h3 className="text-white font-medium">{challenge.title}</h3>
+                          <span className={`px-2 py-1 rounded-full text-xs font-medium border ${getLevelColor(challenge.level)}`}>
+                            {challenge.level}
+                          </span>
+                          {challenge.is_active ? (
+                            <CheckCircle className="h-4 w-4 text-green-400" />
+                          ) : (
+                            <XCircle className="h-4 w-4 text-red-400" />
+                          )}
+                        </div>
+                        <p className="text-white/60 text-sm mb-2">{challenge.description}</p>
+                        <p className="text-white/80 text-sm mb-3 font-medium">"{challenge.question}"</p>
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-xs text-white/40">
+                          <div>
+                            <span className="text-white/60">Duration:</span>
+                            <span className="ml-1">{challenge.max_duration_seconds}s</span>
+                          </div>
+                          <div>
+                            <span className="text-white/60">Points:</span>
+                            <span className="ml-1">{challenge.points_available}</span>
+                          </div>
+                          <div>
+                            <span className="text-white/60">Date:</span>
+                            <span className="ml-1">{new Date(challenge.challenge_date).toLocaleDateString()}</span>
+                          </div>
+                          <div>
+                            <span className="text-white/60">Created:</span>
+                            <span className="ml-1">{new Date(challenge.created_at).toLocaleDateString()}</span>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex space-x-2">
+                        <button
+                          onClick={() => editVoiceChallenge(challenge)}
+                          className="text-white/60 hover:text-white p-2 rounded-lg hover:bg-white/10 transition-colors"
+                        >
+                          <Edit className="h-4 w-4" />
+                        </button>
+                        <button
+                          onClick={() => deleteVoiceChallenge(challenge.id)}
+                          className="text-red-400 hover:text-red-300 p-2 rounded-lg hover:bg-red-500/10 transition-colors"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-12">
+                <MessageSquare className="h-16 w-16 text-white/20 mx-auto mb-4" />
+                <h3 className="text-white/60 text-lg mb-2">No Voice Challenges Yet</h3>
+                <p className="text-white/40 text-sm">Create your first voice challenge to get started!</p>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Voice Submissions Tab */}
+        {activeTab === 'voice-submissions' && (
+          <div className="space-y-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <h2 className="text-xl sm:text-2xl font-light text-white">Voice Challenge Submissions</h2>
+              <div className="flex flex-col sm:flex-row gap-3">
+                              <select
+                value={selectedChallenge || ''}
+                onChange={(e) => {
+                  setSelectedChallenge(e.target.value || null)
+                  setSelectedLevel('all') // Reset level filter when challenge changes
+                }}
+                className="bg-white/10 border border-white/20 rounded-lg text-white px-4 py-2"
+              >
+                <option value="">Select a Voice Challenge</option>
+                {voiceChallenges.map(challenge => (
+                  <option key={challenge.id} value={challenge.id}>{challenge.title}</option>
+                ))}
+              </select>
+                
+                <select
+                  value={selectedLevel}
+                  onChange={(e) => setSelectedLevel(e.target.value)}
+                  className="bg-white/10 border border-white/20 rounded-lg text-white px-4 py-2"
+                >
+                  <option value="all">All Levels</option>
+                  <option value="beginner">Beginner</option>
+                  <option value="intermediate">Intermediate</option>
+                  <option value="advanced">Advanced</option>
+                </select>
+              </div>
+            </div>
+
+            {selectedChallenge ? (
+              <>
+                {/* Level Summary */}
+                <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-4">
+                  <h3 className="text-white font-medium mb-3">Submissions Summary</h3>
+                  <div className="grid grid-cols-3 gap-4">
+                    {['beginner', 'intermediate', 'advanced'].map(level => {
+                      const count = voiceSubmissions.filter(s => s.challenge_level === level).length
+                      return (
+                        <div key={level} className="text-center">
+                          <div className={`text-2xl font-bold ${getLevelColor(level).split(' ')[0]}`}>
+                            {count}
+                          </div>
+                          <div className="text-white/60 text-sm capitalize">{level}</div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+
+                {loadingVoiceSubmissions ? (
+                  <div className="text-center py-8">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+                    <p className="text-white/60">Loading submissions...</p>
+                  </div>
+                ) : voiceSubmissions.length > 0 ? (
+                  <div className="space-y-4">
+                    {voiceSubmissions.map(submission => (
+                      <div key={submission.id} className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-6">
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <div className="flex items-center space-x-3 mb-2">
+                              <h3 className="text-white font-medium">
+                                {submission.first_name} {submission.last_name}
+                              </h3>
+                              <span className={`px-2 py-1 rounded-full text-xs font-medium border ${getLevelColor(submission.challenge_level)}`}>
+                                {submission.challenge_level}
+                              </span>
+                              <span className="text-white/60 text-sm">ID: {submission.id.slice(0, 8)}...</span>
+                            </div>
+                            <p className="text-white/60 text-sm mb-2">Duration: {submission.voice_duration_seconds}s</p>
+                            <p className="text-white/60 text-sm">Submitted: {new Date(submission.submitted_at).toLocaleString()}</p>
+                            
+                            {/* Audio Player */}
+                            <div className="mt-4">
+                              <audio 
+                                controls 
+                                className="w-full" 
+                                src={submission.voice_file_url}
+                              />
+                            </div>
+                          </div>
+                          <div className="flex flex-col space-y-2">
+                            <button
+                              onClick={() => selectWinner(submission.id)}
+                              disabled={submission.is_winner}
+                              className={`p-2 rounded-lg transition-colors ${
+                                submission.is_winner 
+                                  ? 'bg-green-500/20 text-green-400 cursor-not-allowed'
+                                  : 'bg-green-500/20 hover:bg-green-500/30 text-green-400'
+                              }`}
+                              title={submission.is_winner ? 'Already Winner' : 'Select as Winner'}
+                            >
+                              <CheckCircle className="h-4 w-4" />
+                            </button>
+                            <button
+                              onClick={() => downloadSubmission(submission)}
+                              className="p-2 rounded-lg bg-blue-500/20 hover:bg-blue-500/30 text-blue-400 transition-colors"
+                              title="Download Audio"
+                            >
+                              <Download className="h-4 w-4" />
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-12">
+                    <MessageSquare className="h-16 w-16 text-white/20 mx-auto mb-4" />
+                    <h3 className="text-white/60 text-lg mb-2">No Submissions Yet</h3>
+                    <p className="text-white/40 text-sm">No one has submitted for this challenge yet.</p>
+                  </div>
+                )}
+              </>
+            ) : (
+              <div className="text-center py-12">
+                <MessageSquare className="h-16 w-16 text-white/20 mx-auto mb-4" />
+                <h3 className="text-white/60 text-lg mb-2">Select a Voice Challenge</h3>
+                <p className="text-white/40 text-sm">Choose a challenge from the dropdown to view submissions.</p>
+              </div>
+            )}
           </div>
         )}
 
@@ -1116,6 +1673,180 @@ export default function AdminDashboard({ user }) {
               <button
                 onClick={saveTopic}
                 disabled={saving || !topicForm.title.trim()}
+                className="flex-1 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 disabled:cursor-not-allowed rounded-lg transition-colors text-white flex items-center justify-center space-x-2"
+              >
+                {saving ? (
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                ) : (
+                  <>
+                    <Save className="h-4 w-4" />
+                    <span>Save</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Voice Challenge Modal */}
+      {showVoiceChallengeModal && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-gray-800 rounded-2xl p-4 sm:p-6 w-full max-w-2xl border border-gray-700 mx-4 max-h-[90vh] overflow-y-auto">
+            <h3 className="text-xl font-bold text-white mb-4">
+              {editingVoiceChallenge ? 'Edit Voice Challenge' : 'Add Voice Challenge'}
+            </h3>
+            
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">Title *</label>
+                  <input
+                    type="text"
+                    value={voiceChallengeForm.title}
+                    onChange={(e) => setVoiceChallengeForm(prev => ({ ...prev, title: e.target.value }))}
+                    placeholder="Enter challenge title..."
+                    className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">Level *</label>
+                  <select
+                    value={voiceChallengeForm.level}
+                    onChange={(e) => {
+                      const newLevel = e.target.value
+                      setVoiceChallengeForm(prev => ({ ...prev, level: newLevel }))
+                      // Auto-fill question when level changes
+                      getRandomQuestionForLevel(newLevel)
+                    }}
+                    className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white"
+                  >
+                    <option value="beginner">Beginner</option>
+                    <option value="intermediate">Intermediate</option>
+                    <option value="advanced">Advanced</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">Description *</label>
+                <textarea
+                  value={voiceChallengeForm.description}
+                  onChange={(e) => setVoiceChallengeForm(prev => ({ ...prev, description: e.target.value }))}
+                  placeholder="Enter challenge description..."
+                  rows={2}
+                  className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">Question *</label>
+                <textarea
+                  value={voiceChallengeForm.question}
+                  onChange={(e) => setVoiceChallengeForm(prev => ({ ...prev, question: e.target.value }))}
+                  placeholder="Enter the question users need to answer..."
+                  rows={3}
+                  className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">Max Duration (seconds) *</label>
+                  <input
+                    type="number"
+                    min="10"
+                    max="300"
+                    value={voiceChallengeForm.max_duration_seconds}
+                    onChange={(e) => setVoiceChallengeForm(prev => ({ ...prev, max_duration_seconds: parseInt(e.target.value) || 60 }))}
+                    className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">Points Available</label>
+                  <input
+                    type="number"
+                    min="1"
+                    max="100"
+                    value={voiceChallengeForm.points_available}
+                    onChange={(e) => setVoiceChallengeForm(prev => ({ ...prev, points_available: parseInt(e.target.value) || 10 }))}
+                    className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">Challenge Date *</label>
+                  <input
+                    type="date"
+                    value={voiceChallengeForm.challenge_date}
+                    onChange={(e) => setVoiceChallengeForm(prev => ({ ...prev, challenge_date: e.target.value }))}
+                    className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">Start Time (optional)</label>
+                  <input
+                    type="time"
+                    value={voiceChallengeForm.start_time}
+                    onChange={(e) => setVoiceChallengeForm(prev => ({ ...prev, start_time: e.target.value }))}
+                    className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">End Time (optional)</label>
+                <input
+                  type="time"
+                  value={voiceChallengeForm.end_time}
+                  onChange={(e) => setVoiceChallengeForm(prev => ({ ...prev, end_time: e.target.value }))}
+                  className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white"
+                />
+              </div>
+
+              <div>
+                <label className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    checked={voiceChallengeForm.is_active}
+                    onChange={(e) => setVoiceChallengeForm(prev => ({ ...prev, is_active: e.target.checked }))}
+                    className="rounded bg-gray-700 border-gray-600"
+                  />
+                  <span className="text-gray-300">Active</span>
+                </label>
+              </div>
+            </div>
+
+            <div className="flex space-x-3 mt-6">
+              <button
+                onClick={() => {
+                  setShowVoiceChallengeModal(false)
+                  setEditingVoiceChallenge(null)
+                  setVoiceChallengeForm({
+                    title: '',
+                    description: '',
+                    question: '',
+                    level: 'beginner',
+                    max_duration_seconds: 60,
+                    points_available: 10,
+                    challenge_date: new Date().toISOString().split('T')[0],
+                    start_time: '',
+                    end_time: '',
+                    is_active: true
+                  })
+                }}
+                className="flex-1 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors text-white"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={saveVoiceChallenge}
+                disabled={saving || !voiceChallengeForm.title.trim() || !voiceChallengeForm.description.trim() || !voiceChallengeForm.question.trim()}
                 className="flex-1 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 disabled:cursor-not-allowed rounded-lg transition-colors text-white flex items-center justify-center space-x-2"
               >
                 {saving ? (

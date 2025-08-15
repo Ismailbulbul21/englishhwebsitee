@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
+import WinnerBanner from './WinnerBanner'
 import { 
   BookOpen, 
   MessageCircle, 
@@ -8,7 +9,8 @@ import {
   Trophy, 
   LogOut,
   ArrowRight,
-  Flame
+  Flame,
+  Award
 } from 'lucide-react'
 
 export default function Dashboard({ user }) {
@@ -153,6 +155,9 @@ export default function Dashboard({ user }) {
         </div>
       </header>
 
+      {/* Winner Banner */}
+      <WinnerBanner user={user} />
+
       <div className="max-w-4xl mx-auto px-6 py-12">
         {/* Welcome Section */}
         <div className="text-center mb-12">
@@ -180,7 +185,7 @@ export default function Dashboard({ user }) {
             </div>
             <h3 className="text-xl font-medium text-white mb-2">Learn</h3>
             <p className="text-white/60 text-sm">
-              Grammar, vocabulary & phrases
+                              Grammar, vocabulary & new categories
             </p>
           </Link>
 
@@ -221,20 +226,20 @@ export default function Dashboard({ user }) {
             </p>
           </Link>
 
-          {/* Debates Card */}
+          {/* Winner Card */}
           <Link
-            to="/debates"
+            to="/voice-challenge"
             className="group bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-8 hover:bg-white/10 transition-all duration-300 hover:scale-105"
           >
             <div className="flex items-center justify-between mb-6">
-              <div className="bg-purple-500/20 rounded-full p-3">
-                <Users className="h-6 w-6 text-purple-400" />
+              <div className="bg-yellow-500/20 rounded-full p-3">
+                <Award className="h-6 w-6 text-yellow-400" />
               </div>
               <ArrowRight className="h-5 w-5 text-white/30 group-hover:text-white/60 group-hover:translate-x-1 transition-all" />
             </div>
-            <h3 className="text-xl font-medium text-white mb-2">Debates</h3>
+            <h3 className="text-xl font-medium text-white mb-2">Winner</h3>
             <p className="text-white/60 text-sm">
-              Group discussions
+              Daily voice challenge
             </p>
           </Link>
 
@@ -278,6 +283,8 @@ export default function Dashboard({ user }) {
           </Link>
         </div>
       </div>
+      
+
     </div>
   )
 } 

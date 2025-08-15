@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from 'react'
+import { useState, useRef, useCallback, useEffect } from 'react'
 import { supabase } from './supabase'
 
 export const useVoiceRecording = () => {
@@ -7,11 +7,17 @@ export const useVoiceRecording = () => {
   const [audioBlob, setAudioBlob] = useState(null)
   const [isUploading, setIsUploading] = useState(false)
   const [error, setError] = useState('')
+  const [forceUpdate, setForceUpdate] = useState(0) // Force re-renders
 
   const mediaRecorderRef = useRef(null)
   const streamRef = useRef(null)
   const timerRef = useRef(null)
   const chunksRef = useRef([])
+
+  // Debug: Monitor recordingTime changes
+  useEffect(() => {
+    console.log('🔄 recordingTime state changed to:', recordingTime)
+  }, [recordingTime])
 
   // Start recording
   const startRecording = useCallback(async () => {
@@ -47,12 +53,18 @@ export const useVoiceRecording = () => {
       console.log('🎵 Using MIME type:', mimeType)
       const mediaRecorder = new MediaRecorder(stream, mimeType ? { mimeType } : {})
       
+      // Check if MediaRecorder is ready
+      if (mediaRecorder.readyState !== MediaRecorder.INACTIVE) {
+        console.log('⚠️ MediaRecorder not in INACTIVE state, readyState:', mediaRecorder.readyState)
+      }
+      
       mediaRecorderRef.current = mediaRecorder
 
       // Handle data available
       mediaRecorder.ondataavailable = (event) => {
         if (event.data.size > 0) {
           chunksRef.current.push(event.data)
+          console.log('📊 Audio chunk received, size:', event.data.size, 'bytes')
         }
       }
 
@@ -64,14 +76,59 @@ export const useVoiceRecording = () => {
         console.log('🎵 Final blob type:', blob.type)
       }
 
+      // Add state change logging
+      mediaRecorder.onstart = () => {
+        console.log('🎬 MediaRecorder onstart event fired')
+      }
+
+      mediaRecorder.onpause = () => {
+        console.log('⏸️ MediaRecorder onpause event fired')
+      }
+
+      mediaRecorder.onresume = () => {
+        console.log('▶️ MediaRecorder onresume event fired')
+      }
+
+      mediaRecorder.onerror = (event) => {
+        console.error('❌ MediaRecorder error:', event.error)
+      }
+
       // Start recording
+      console.log('🎬 Starting MediaRecorder...')
       mediaRecorder.start(1000) // Collect data every second
+      console.log('🎬 MediaRecorder state after start:', mediaRecorder.state)
+      
+      // Verify MediaRecorder is actually recording
+      if (mediaRecorder.state === 'recording') {
+        console.log('✅ MediaRecorder is recording')
+      } else {
+        console.log('⚠️ MediaRecorder is NOT recording, current state:', mediaRecorder.state)
+      }
+      
       setIsRecording(true)
       setRecordingTime(0)
+      console.log('🎬 MediaRecorder started, setting up timer...')
 
       // Start timer
       timerRef.current = setInterval(() => {
-        setRecordingTime(prev => prev + 1)
+        setRecordingTime(prev => {
+          const newTime = prev + 1
+          console.log('⏱️ Recording time:', newTime, 'seconds')
+          return newTime
+        })
+        // Force re-render
+        setForceUpdate(prev => prev + 1)
+      }, 1000)
+      
+      console.log('⏱️ Timer set up successfully')
+      
+      // Verify timer is working
+      setTimeout(() => {
+        if (timerRef.current) {
+          console.log('⏱️ Timer verification: Working correctly')
+        } else {
+          console.log('⏱️ Timer verification: Timer was cleared unexpectedly')
+        }
       }, 1000)
 
       console.log('✅ Recording started successfully')
@@ -119,6 +176,12 @@ export const useVoiceRecording = () => {
     
     console.log('✅ Recording cancelled')
   }, [stopRecording])
+
+  // Reset recording (alias for cancelRecording)
+  const resetRecording = useCallback(() => {
+    console.log('🔄 Resetting voice recording...')
+    cancelRecording()
+  }, [cancelRecording])
 
   // Upload voice message
   const uploadVoiceMessage = useCallback(async (chatSessionId, senderId) => {
@@ -245,6 +308,7 @@ export const useVoiceRecording = () => {
     }
     if (timerRef.current) {
       clearInterval(timerRef.current)
+      timerRef.current = null
     }
     if (streamRef.current) {
       streamRef.current.getTracks().forEach(track => track.stop())
@@ -257,9 +321,11 @@ export const useVoiceRecording = () => {
     audioBlob,
     isUploading,
     error,
+    forceUpdate,
     startRecording,
     stopRecording,
     cancelRecording,
+    resetRecording,
     uploadVoiceMessage,
     formatTime,
     cleanup
