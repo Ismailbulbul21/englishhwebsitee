@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 import { useVoiceRecording } from '../lib/useVoiceRecording'
-import { Mic, Play, Award, Clock, Users, Star, CheckCircle } from 'lucide-react'
+import { Mic, Play, Award, Clock, Users, Star, CheckCircle, User } from 'lucide-react'
 
 export default function VoiceChallengeCard({ user }) {
   const [todaysChallenge, setTodaysChallenge] = useState(null)
@@ -325,13 +325,41 @@ export default function VoiceChallengeCard({ user }) {
           </div>
 
           {!userFullName ? (
-            <button
-              onClick={() => setShowFullNameModal(true)}
-              className="w-full bg-blue-500 hover:bg-blue-600 text-white py-3 px-4 rounded-xl transition-colors flex items-center justify-center space-x-2"
-            >
-              <Star className="h-4 w-4" />
-              <span>Set Your Full Name to Participate</span>
-            </button>
+            <div className="space-y-4">
+              {/* Simple explanation */}
+              <div className="text-center">
+                <p className="text-blue-300 text-sm mb-1">
+                  Magsacaaga buuxo • Enter name first
+                </p>
+                <p className="text-white/60 text-xs">
+                  One-time setup to join
+                </p>
+              </div>
+              
+              {/* Profile setup button for card - Different from record button */}
+              <div className="flex justify-center">
+                <button
+                  onClick={() => setShowFullNameModal(true)}
+                  className="group relative"
+                >
+                  {/* Pulsing background rings - Blue instead of red */}
+                  <div className="absolute inset-0 rounded-full bg-gradient-to-r from-blue-500 to-purple-500 opacity-20 animate-ping"></div>
+                  <div className="absolute inset-1 rounded-full bg-gradient-to-r from-blue-500 to-purple-500 opacity-30 animate-pulse"></div>
+                  
+                  {/* Main button - Blue with User icon, not red with mic */}
+                  <div className="relative w-14 h-14 bg-gradient-to-br from-blue-500 via-blue-600 to-purple-600 rounded-full flex items-center justify-center shadow-xl group-hover:scale-110 group-active:scale-95 transition-all duration-200 border-3 border-white/20 group-hover:border-white/40">
+                    <User className="h-6 w-6 text-white drop-shadow-lg" />
+                  </div>
+                  
+                  {/* Compact label */}
+                  <div className="absolute -bottom-6 left-1/2 transform -translate-x-1/2 whitespace-nowrap">
+                    <span className="text-blue-400 text-xs font-medium">
+                      👆 Magaca • Name
+                    </span>
+                  </div>
+                </button>
+              </div>
+            </div>
           ) : userSubmission ? (
             <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-4 text-center">
               <div className="flex items-center justify-center space-x-2 mb-2">

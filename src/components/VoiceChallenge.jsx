@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { useVoiceRecording } from '../lib/useVoiceRecording';
-import { Mic, MicOff, Play, Pause, Square, Upload, User, Calendar, Clock, Award } from 'lucide-react';
+import { Mic, MicOff, Play, Pause, Square, Upload, User, Calendar, Clock, Award, Star } from 'lucide-react';
 
 export default function VoiceChallenge({ user, onClose }) {
   const [challenge, setChallenge] = useState(null);
@@ -275,81 +275,135 @@ export default function VoiceChallenge({ user, onClose }) {
           </div>
         </div>
 
-        {/* User Registration */}
+        {/* User Registration - Intuitive Design */}
         {!isRegistered && (
-          <div className="bg-white/5 rounded-xl p-6 mb-6">
-            <div className="flex items-center gap-2 mb-4">
-              <User className="h-5 w-5 text-white/60" />
-              <h4 className="text-lg font-medium text-white">Register Your Name</h4>
-            </div>
-            <p className="text-white/60 mb-4">
-              To participate in challenges and potentially win, please provide your full name.
-              This will be displayed publicly if you win.
-            </p>
-            
-            <div className="grid grid-cols-2 gap-4">
-              <input
-                type="text"
-                placeholder="First Name"
-                className="bg-white/10 border border-white/20 rounded-lg px-4 py-3 text-white placeholder-white/40 focus:outline-none focus:border-white/40"
-                onChange={(e) => setUserFullName(e.target.value.split(' ')[0] + ' ' + (userFullName.split(' ')[1] || ''))}
-              />
-              <input
-                type="text"
-                placeholder="Last Name"
-                className="bg-white/10 border border-white/20 rounded-lg px-4 py-3 text-white placeholder-white/40 focus:outline-none focus:border-white/40"
-                onChange={(e) => setUserFullName((userFullName.split(' ')[0] || '') + ' ' + e.target.value)}
-              />
+          <div className="bg-white/5 rounded-xl p-4 sm:p-6 mb-6">
+            <div className="text-center mb-6">
+              <h4 className="text-lg sm:text-xl font-bold text-white mb-2">Magsacaaga buuxo</h4>
+              <p className="text-blue-300 text-sm">
+                Enter your name to join • Ku qoro magacaaga si aad uga qayb gasho
+              </p>
             </div>
             
-            <button
-              onClick={() => {
-                const names = userFullName.trim().split(' ');
-                if (names.length === 2 && names[0] && names[1]) {
-                  registerUser(names[0], names[1]);
-                }
-              }}
-              disabled={!userFullName.trim().includes(' ') || userFullName.trim().split(' ').length < 2}
-              className="mt-4 bg-blue-500 hover:bg-blue-600 disabled:bg-white/10 disabled:text-white/40 text-white px-6 py-3 rounded-lg transition-colors disabled:cursor-not-allowed"
-            >
-              Register & Continue
-            </button>
+            {/* Mobile-first single input approach */}
+            <div className="space-y-4">
+              <div>
+                <input
+                  type="text"
+                  value={userFullName}
+                  onChange={(e) => setUserFullName(e.target.value)}
+                  placeholder="Magaca buuxa • Full Name"
+                  className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/40 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all text-sm sm:text-base"
+                  autoFocus
+                />
+              </div>
+            </div>
+            
+            {/* Profile setup button - Different from record button */}
+            <div className="flex justify-center mt-6">
+              <button
+                onClick={() => {
+                  const names = userFullName.trim().split(' ');
+                  if (names.length >= 2 && names[0] && names[1]) {
+                    registerUser(names[0], names.slice(1).join(' '));
+                  }
+                }}
+                disabled={!userFullName.trim().includes(' ') || userFullName.trim().split(' ').length < 2}
+                className="group relative disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {/* Pulsing background rings - only when enabled */}
+                {userFullName.trim().includes(' ') && userFullName.trim().split(' ').length >= 2 && (
+                  <>
+                    <div className="absolute inset-0 rounded-full bg-gradient-to-r from-blue-500 to-purple-500 opacity-20 animate-ping"></div>
+                    <div className="absolute inset-2 rounded-full bg-gradient-to-r from-blue-500 to-purple-500 opacity-30 animate-pulse"></div>
+                  </>
+                )}
+                
+                {/* Main button - Blue with User icon, not red with mic */}
+                <div className="relative w-16 h-16 sm:w-20 sm:h-20 bg-gradient-to-br from-blue-500 via-blue-600 to-purple-600 disabled:from-gray-600 disabled:to-gray-700 rounded-full flex items-center justify-center shadow-xl group-hover:scale-105 group-active:scale-95 transition-all duration-200 border-4 border-white/20 group-hover:border-white/40">
+                  <User className="h-6 w-6 sm:h-8 sm:w-8 text-white drop-shadow-lg" />
+                </div>
+                
+                {/* Label */}
+                <div className="absolute -bottom-6 left-1/2 transform -translate-x-1/2 whitespace-nowrap">
+                  <span className="text-blue-400 text-xs font-medium">
+                    {userFullName.trim().includes(' ') && userFullName.trim().split(' ').length >= 2 
+                      ? '👆 Kaydi • Save & Start'
+                      : 'Magaca buuxo • Enter full name'
+                    }
+                  </span>
+                </div>
+              </button>
+            </div>
           </div>
         )}
 
         {/* Voice Recording */}
         {isRegistered && (
           <div className="bg-white/5 rounded-xl p-6">
-            <h4 className="text-lg font-medium text-white mb-4">🎙️ Record Your Response</h4>
+            <h4 className="text-lg font-medium text-white mb-6 text-center">🎙️ Record Your Response</h4>
             
-            {/* Recording Controls */}
-            <div className="flex items-center justify-center gap-4 mb-6">
-              {!isRecording && !audioUrl && (
+            {/* Recording Controls - Intuitive Design */}
+            <div className="flex items-center justify-center mb-6">
+              {!isRecording && !audioUrl ? (
+                /* RECORD BUTTON */
                 <button
                   onClick={startRecording}
-                  className="bg-red-500 hover:bg-red-600 text-white p-4 rounded-full transition-colors"
+                  className="group relative"
                 >
-                  <Mic className="h-6 w-6" />
+                  {/* Pulsing rings */}
+                  <div className="absolute inset-0 rounded-full bg-red-500 opacity-20 animate-ping"></div>
+                  <div className="absolute inset-2 rounded-full bg-red-500 opacity-30 animate-pulse"></div>
+                  
+                  {/* Main record button */}
+                  <div className="relative w-16 h-16 bg-gradient-to-br from-red-500 via-red-600 to-red-700 rounded-full flex items-center justify-center shadow-xl group-hover:scale-110 group-active:scale-95 transition-all duration-200 border-4 border-white/20">
+                    <Mic className="h-6 w-6 text-white drop-shadow-lg" />
+                  </div>
+                  
+                  {/* Label */}
+                  <div className="absolute -bottom-8 left-1/2 transform -translate-x-1/2 whitespace-nowrap">
+                    <span className="text-red-400 text-xs font-bold">
+                      🎤 Riix • Record
+                    </span>
+                  </div>
                 </button>
-              )}
-              
-              {isRecording && (
-                <>
+              ) : isRecording ? (
+                /* RECORDING CONTROLS */
+                <div className="flex items-center gap-6">
+                  {/* Pause/Resume Button */}
                   <button
                     onClick={isPaused ? resumeRecording : pauseRecording}
-                    className="bg-yellow-500 hover:bg-yellow-600 text-white p-4 rounded-full transition-colors"
+                    className="group relative"
                   >
-                    {isPaused ? <Play className="h-6 w-6" /> : <Pause className="h-6 w-6" />}
+                    <div className="relative w-12 h-12 bg-gradient-to-br from-yellow-500 to-orange-500 rounded-full flex items-center justify-center shadow-xl group-hover:scale-110 transition-all duration-200 border-3 border-white/20">
+                      {isPaused ? <Play className="h-5 w-5 text-white ml-1" /> : <Pause className="h-5 w-5 text-white" />}
+                    </div>
+                    <div className="absolute -bottom-6 left-1/2 transform -translate-x-1/2 whitespace-nowrap">
+                      <span className="text-yellow-400 text-xs font-medium">
+                        {isPaused ? '▶️ Resume' : '⏸️ Pause'}
+                      </span>
+                    </div>
                   </button>
                   
+                  {/* Stop Button */}
                   <button
                     onClick={stopRecording}
-                    className="bg-gray-500 hover:bg-gray-600 text-white p-4 rounded-full transition-colors"
+                    className="group relative"
                   >
-                    <Square className="h-6 w-6" />
+                    {/* Pulsing rings for recording */}
+                    <div className="absolute inset-0 rounded-lg bg-red-500 opacity-20 animate-ping"></div>
+                    
+                    <div className="relative w-12 h-12 bg-gradient-to-br from-red-500 via-red-600 to-red-700 rounded-lg flex items-center justify-center shadow-xl group-hover:scale-110 transition-all duration-200 border-3 border-white/20">
+                      <Square className="h-5 w-5 text-white fill-white" />
+                    </div>
+                    <div className="absolute -bottom-6 left-1/2 transform -translate-x-1/2 whitespace-nowrap">
+                      <span className="text-red-400 text-xs font-bold">
+                        ⏹️ Stop
+                      </span>
+                    </div>
                   </button>
-                </>
-              )}
+                </div>
+              ) : null}
             </div>
 
             {/* Recording Status */}
