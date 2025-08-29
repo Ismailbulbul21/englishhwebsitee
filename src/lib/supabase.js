@@ -1,16 +1,12 @@
 import { createClient } from '@supabase/supabase-js'
 
-// Use environment variables for security - NO HARDCODED FALLBACKS
+// Get credentials from environment variables
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
 
-// Validate environment variables - CRITICAL for security
-if (!supabaseUrl) {
-  throw new Error('Missing VITE_SUPABASE_URL environment variable. Please check your .env.local file.')
-}
-
-if (!supabaseAnonKey) {
-  throw new Error('Missing VITE_SUPABASE_ANON_KEY environment variable. Please check your .env.local file.')
+// Validate credentials
+if (!supabaseUrl || !supabaseAnonKey) {
+  throw new Error('Supabase credentials are missing. Please check your environment variables VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY.')
 }
 
 // Optimized client configuration for 100+ concurrent users

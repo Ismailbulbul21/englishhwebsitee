@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import WinnerBanner from './WinnerBanner'
+import InfoBanner from './InfoBanner'
 import { 
   BookOpen, 
   MessageCircle, 
@@ -144,6 +145,15 @@ export default function Dashboard({ user }) {
                 </Link>
               )}
               
+              {/* About Link */}
+              <Link
+                to="/about"
+                className="bg-blue-600/20 hover:bg-blue-600/30 text-blue-400 px-3 py-1 rounded-lg text-sm transition-colors flex items-center space-x-1"
+                title="About HadalHub"
+              >
+                <span>About</span>
+              </Link>
+              
               <button
                 onClick={handleSignOut}
                 className="text-white/50 hover:text-white/80 transition-colors"
@@ -157,6 +167,9 @@ export default function Dashboard({ user }) {
 
       {/* Winner Banner */}
       <WinnerBanner user={user} />
+
+      {/* Info Banner */}
+      <InfoBanner />
 
       <div className="max-w-4xl mx-auto px-6 py-12">
         {/* Welcome Section */}
@@ -283,7 +296,6 @@ export default function Dashboard({ user }) {
           </Link>
         </div>
       </div>
-      
 
     </div>
   )
