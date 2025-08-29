@@ -430,7 +430,7 @@ export default function AboutPage() {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 max-w-4xl mx-auto">
+          <div className="max-w-2xl mx-auto">
             
             {/* Contact Information */}
             <div className="bg-gradient-to-br from-slate-800/80 to-slate-900/80 backdrop-blur-sm border border-white/20 rounded-3xl p-8 hover:scale-105 hover:shadow-2xl transition-all duration-300">
@@ -467,54 +467,6 @@ export default function AboutPage() {
                   </div>
                 </div>
               </div>
-            </div>
-            
-            {/* Contact Form */}
-            <div className="bg-gradient-to-br from-slate-800/80 to-slate-900/80 backdrop-blur-sm border border-white/20 rounded-3xl p-8 hover:scale-105 hover:shadow-2xl transition-all duration-300">
-              <h3 className="text-2xl font-bold text-white mb-6">Send us a Message</h3>
-              
-              <form className="space-y-4">
-                <div>
-                  <input
-                    type="text"
-                    placeholder="Your Name"
-                    className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/50 focus:outline-none focus:border-cyan-500 focus:bg-white/15 transition-all duration-200"
-                  />
-                </div>
-                
-                <div>
-                  <input
-                    type="email"
-                    placeholder="Your Email"
-                    className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/50 focus:outline-none focus:border-cyan-500 focus:bg-white/15 transition-all duration-200"
-                  />
-                </div>
-                
-                <div>
-                  <select className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white focus:outline-none focus:border-cyan-500 focus:bg-white/15 transition-all duration-200">
-                    <option value="" className="bg-slate-800">Select Subject</option>
-                    <option value="general" className="bg-slate-800">General Inquiry</option>
-                    <option value="support" className="bg-slate-800">Technical Support</option>
-                    <option value="partnership" className="bg-slate-800">Partnership</option>
-                    <option value="feedback" className="bg-slate-800">Feedback</option>
-                  </select>
-                </div>
-                
-                <div>
-                  <textarea
-                    rows="4"
-                    placeholder="Your Message"
-                    className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/50 focus:outline-none focus:border-cyan-500 focus:bg-white/15 transition-all duration-200 resize-none"
-                  ></textarea>
-                </div>
-                
-                <button
-                  type="submit"
-                  className="w-full bg-gradient-to-r from-cyan-500 to-pink-600 hover:from-cyan-600 hover:to-pink-700 text-white font-semibold py-3 px-6 rounded-xl transition-all duration-200 hover:scale-105 hover:shadow-lg"
-                >
-                  Send Message
-                </button>
-              </form>
             </div>
           </div>
         </div>
