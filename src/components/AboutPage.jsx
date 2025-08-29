@@ -1,6 +1,9 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { ArrowLeft, Star, Users, Target, MessageCircle, Globe, Award, Mail, MapPin, Clock, Linkedin, Twitter, Github, Instagram, Crown, Zap, Heart, Sparkles, BookOpen, GraduationCap, Flag } from 'lucide-react'
+// Import team photos
+import ismaanPhoto from '../assets/team/ismaan.jpg'
+import proudPhoto from '../assets/team/proud.jpg'
 
 export default function AboutPage() {
   const [isVisible, setIsVisible] = useState(false)
@@ -16,7 +19,7 @@ export default function AboutPage() {
       id: 1,
       name: "Ismail mohamed osman ",
       position: " Founder",
-      photo: "/src/assets/team/ismaan.jpg",
+      photo: ismaanPhoto,
       bio: "CEO of HadalHub",
       email: "ismailbulbul381@gmail.com",
       social: {
@@ -27,7 +30,7 @@ export default function AboutPage() {
       id: 2,
       name: "Najma sh. Abdihafiith nor",
       position: "Marketing ",
-      photo: "/src/assets/team/proud.jpg",
+      photo: proudPhoto,
       bio: "Team Marketing Header ",
      
       social: {
