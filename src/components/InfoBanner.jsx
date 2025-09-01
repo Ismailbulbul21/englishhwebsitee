@@ -99,61 +99,61 @@ const InfoBanner = () => {
 
   return (
     <div className="relative mb-4">
-      {/* Modern Gradient Banner */}
+      {/* Modern Gradient Banner - Mobile Responsive */}
       <div className="relative overflow-hidden">
         <div
           className={`bg-gradient-to-r ${getBannerStyle(currentAnnouncement.type)} 
-                     border border-white/20 rounded-3xl shadow-2xl 
+                     border border-white/20 rounded-2xl sm:rounded-3xl shadow-xl sm:shadow-2xl 
                      transform transition-all duration-500 ease-out
                      ${isTransitioning ? 'scale-95 opacity-80 translate-y-1' : 'scale-100 opacity-100 translate-y-0'}
-                     hover:scale-[1.02] hover:shadow-3xl hover:-translate-y-1`}
+                     hover:scale-[1.01] sm:hover:scale-[1.02] hover:shadow-2xl sm:hover:shadow-3xl hover:-translate-y-0.5 sm:hover:-translate-y-1`}
         >
-          {/* Unique English Learning & Somali Culture Background */}
+          {/* Unique English Learning & Somali Culture Background - Mobile Responsive */}
           <div className="absolute inset-0 opacity-15">
-            {/* Floating English books */}
-            <div className="absolute top-4 left-8 w-16 h-20 bg-white/20 rounded-lg transform rotate-12 animate-float-slow"></div>
-            <div className="absolute top-12 right-12 w-12 h-16 bg-white/15 rounded-lg transform -rotate-6 animate-float-medium"></div>
-            <div className="absolute bottom-8 left-16 w-14 h-18 bg-white/10 rounded-lg transform rotate-3 animate-float-fast"></div>
+            {/* Floating English books - hidden on mobile to reduce clutter */}
+            <div className="hidden sm:block absolute top-4 left-8 w-16 h-20 bg-white/20 rounded-lg transform rotate-12 animate-float-slow"></div>
+            <div className="hidden sm:block absolute top-12 right-12 w-12 h-16 bg-white/15 rounded-lg transform -rotate-6 animate-float-medium"></div>
+            <div className="hidden sm:block absolute bottom-8 left-16 w-14 h-18 bg-white/10 rounded-lg transform rotate-3 animate-float-fast"></div>
             
-            {/* Somali flag colors (blue, white, green) */}
-            <div className="absolute top-1/4 right-1/4 w-20 h-3 bg-blue-400/20 rounded-full animate-pulse"></div>
-            <div className="absolute top-1/3 right-1/3 w-16 h-3 bg-white/30 rounded-full animate-pulse delay-1000"></div>
-            <div className="absolute top-2/5 right-2/5 w-18 h-3 bg-green-400/20 rounded-full animate-pulse delay-2000"></div>
+            {/* Somali flag colors (blue, white, green) - much smaller on mobile */}
+            <div className="absolute top-1/4 right-1/4 w-8 sm:w-12 md:w-20 h-1.5 sm:h-2 md:h-3 bg-blue-400/20 rounded-full animate-pulse"></div>
+            <div className="absolute top-1/3 right-1/3 w-6 sm:w-10 md:w-16 h-1.5 sm:h-2 md:h-3 bg-white/30 rounded-full animate-pulse delay-1000"></div>
+            <div className="absolute top-2/5 right-2/5 w-7 sm:w-11 md:w-18 h-1.5 sm:h-2 md:h-3 bg-green-400/20 rounded-full animate-pulse delay-2000"></div>
             
-            {/* English letters floating */}
-            <div className="absolute top-6 left-1/4 text-white/20 text-2xl font-bold animate-bounce">E</div>
-            <div className="absolute top-16 right-1/3 text-white/15 text-xl font-bold animate-bounce delay-500">N</div>
-            <div className="absolute bottom-12 left-1/3 text-white/25 text-lg font-bold animate-bounce delay-1000">G</div>
+            {/* English letters floating - much smaller on mobile */}
+            <div className="absolute top-3 sm:top-6 left-1/4 text-white/20 text-sm sm:text-lg md:text-2xl font-bold animate-bounce">E</div>
+            <div className="absolute top-8 sm:top-16 right-1/3 text-white/15 text-xs sm:text-base md:text-xl font-bold animate-bounce delay-500">N</div>
+            <div className="absolute bottom-6 sm:bottom-12 left-1/3 text-white/25 text-xs sm:text-sm md:text-lg font-bold animate-bounce delay-1000">G</div>
             
-            {/* Learning symbols */}
-            <div className="absolute top-1/2 left-1/2 w-24 h-24 bg-white/5 rounded-full blur-2xl animate-ping"></div>
-            <div className="absolute bottom-4 right-8 w-20 h-20 bg-white/8 rounded-full blur-xl animate-pulse"></div>
+            {/* Learning symbols - much smaller on mobile */}
+            <div className="absolute top-1/2 left-1/2 w-8 sm:w-16 md:w-24 h-8 sm:h-16 md:h-24 bg-white/5 rounded-full blur-xl sm:blur-2xl animate-ping"></div>
+            <div className="absolute bottom-2 sm:bottom-4 right-4 sm:right-8 w-6 sm:w-12 md:w-20 h-6 sm:h-12 md:h-20 bg-white/8 rounded-full blur-lg sm:blur-xl animate-pulse"></div>
             
-            {/* Connection lines representing learning */}
-            <div className="absolute top-1/4 left-1/4 w-32 h-0.5 bg-gradient-to-r from-transparent via-white/20 to-transparent transform rotate-45 animate-pulse"></div>
-            <div className="absolute bottom-1/4 right-1/4 w-28 h-0.5 bg-gradient-to-r from-transparent via-white/15 to-transparent transform -rotate-45 animate-pulse delay-1000"></div>
+            {/* Connection lines representing learning - hidden on mobile */}
+            <div className="hidden sm:block absolute top-1/4 left-1/4 w-32 h-0.5 bg-gradient-to-r from-transparent via-white/20 to-transparent transform rotate-45 animate-pulse"></div>
+            <div className="hidden sm:block absolute bottom-1/4 right-1/4 w-28 h-0.5 bg-gradient-to-r from-transparent via-white/15 to-transparent transform -rotate-45 animate-pulse delay-1000"></div>
           </div>
 
-          {/* Content - Centered and Smaller */}
-          <div className="relative p-6 text-white text-center">
+          {/* Content - Centered and Mobile Responsive */}
+          <div className="relative p-3 sm:p-4 md:p-6 text-white text-center">
             {/* Header with icon and title */}
-            <div className="flex items-center justify-center space-x-3 mb-3">
-              <span className="text-3xl animate-bounce">{getTypeIcon(currentAnnouncement.type)}</span>
-              <h3 className="text-2xl font-black tracking-wide text-white drop-shadow-lg">
+            <div className="flex items-center justify-center space-x-1 sm:space-x-2 md:space-x-3 mb-1 sm:mb-2 md:mb-3">
+              <span className="text-xl sm:text-2xl md:text-3xl animate-bounce">{getTypeIcon(currentAnnouncement.type)}</span>
+              <h3 className="text-base sm:text-lg md:text-xl lg:text-2xl font-black tracking-wide text-white drop-shadow-lg leading-tight">
                 {currentAnnouncement.title}
               </h3>
             </div>
             
-            {/* Message with smaller, bolder typography */}
-            <p className="text-white/95 text-lg leading-relaxed font-bold max-w-3xl mx-auto">
+            {/* Message with responsive typography */}
+            <p className="text-white/95 text-xs sm:text-sm md:text-base lg:text-lg leading-relaxed font-bold max-w-3xl mx-auto px-1 sm:px-2 md:px-0">
               {currentAnnouncement.message}
             </p>
           </div>
 
           {/* Animated progress bar - now properly 60 seconds */}
-          <div className="absolute bottom-0 left-0 h-1.5 bg-white/30 w-full overflow-hidden rounded-b-3xl">
+          <div className="absolute bottom-0 left-0 h-1 sm:h-1.5 bg-white/30 w-full overflow-hidden rounded-b-2xl sm:rounded-b-3xl">
             <div 
-              className="h-full bg-white/80 rounded-b-3xl transition-all duration-1000 ease-linear
+              className="h-full bg-white/80 rounded-b-2xl sm:rounded-b-3xl transition-all duration-1000 ease-linear
                          shadow-lg shadow-white/30"
               style={{
                 width: `${progressWidth}%`
@@ -169,7 +169,7 @@ const InfoBanner = () => {
 
       {/* Enhanced multiple announcements indicator */}
       {announcements.length > 1 && (
-        <div className="flex justify-center mt-4 space-x-2">
+        <div className="flex justify-center mt-2 sm:mt-4 space-x-1 sm:space-x-2">
           {announcements.map((_, index) => (
             <button
               key={index}
@@ -180,7 +180,7 @@ const InfoBanner = () => {
                   setIsTransitioning(false)
                 }, 400)
               }}
-              className={`w-4 h-4 rounded-full transition-all duration-500 ease-out cursor-pointer
+              className={`w-3 h-3 sm:w-4 sm:h-4 rounded-full transition-all duration-500 ease-out cursor-pointer
                          ${index === currentIndex 
                            ? 'bg-white scale-125 shadow-lg shadow-white/50' 
                            : 'bg-white/30 hover:bg-white/50 hover:scale-110'
@@ -190,12 +190,12 @@ const InfoBanner = () => {
         </div>
       )}
 
-      {/* Floating particles effect */}
+      {/* Floating particles effect - Mobile Responsive */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden">
-        <div className="absolute top-4 left-4 w-2 h-2 bg-white/20 rounded-full animate-ping"></div>
-        <div className="absolute top-8 right-8 w-1 h-1 bg-white/30 rounded-full animate-pulse"></div>
-        <div className="absolute bottom-6 left-12 w-1.5 h-1.5 bg-white/25 rounded-full animate-bounce"></div>
-        <div className="absolute top-1/4 right-1/4 w-1 h-1 bg-white/15 rounded-full animate-ping delay-1000"></div>
+        <div className="absolute top-2 sm:top-4 left-2 sm:left-4 w-1 sm:w-1.5 md:w-2 h-1 sm:h-1.5 md:h-2 bg-white/20 rounded-full animate-ping"></div>
+        <div className="absolute top-4 sm:top-8 right-4 sm:right-8 w-0.5 sm:w-1 h-0.5 sm:h-1 bg-white/30 rounded-full animate-pulse"></div>
+        <div className="absolute bottom-3 sm:bottom-6 left-6 sm:left-12 w-0.5 sm:w-1 md:w-1.5 h-0.5 sm:h-1 md:h-1.5 bg-white/25 rounded-full animate-bounce"></div>
+        <div className="absolute top-1/4 right-1/4 w-0.5 sm:w-1 h-0.5 sm:h-1 bg-white/15 rounded-full animate-ping delay-1000"></div>
       </div>
 
       {/* Custom CSS Animations */}
