@@ -296,7 +296,7 @@ export default function AboutPage() {
                   <div className="relative w-full h-64 overflow-hidden">
                     <div className="absolute inset-0 bg-gradient-to-t from-slate-900/80 via-transparent to-transparent z-10"></div>
                     <img 
-                      src={member.photo} 
+                      src={`${member.photo}?v=${Date.now()}`}
                       alt={`${member.name} - ${member.position}`}
                       className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 ease-out"
                       onError={(e) => {
