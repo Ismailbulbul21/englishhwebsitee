@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { ArrowLeft, Star, Users, Target, MessageCircle, Globe, Award, Mail, MapPin, Clock, Linkedin, Twitter, Github, Instagram, Crown, Zap, Heart, Sparkles, BookOpen, GraduationCap, Flag } from 'lucide-react'
 // Import team photos
-import ismaanPhoto from '../assets/team/ismaan.jpg'
+import bastiannPhoto from '../assets/team/bastiann.jpg'
 import proudPhoto from '../assets/team/proud.jpg'
 
 export default function AboutPage() {
@@ -19,7 +19,7 @@ export default function AboutPage() {
       id: 1,
       name: "Ismail mohamed osman ",
       position: " Founder",
-      photo: ismaanPhoto,
+      photo: bastiannPhoto,
       bio: "CEO of HadalHub",
       email: "ismailbulbul381@gmail.com",
       social: {
