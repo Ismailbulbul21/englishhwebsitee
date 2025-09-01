@@ -3,9 +3,20 @@ import { supabase } from '../lib/supabase'
 
 const InfoBanner = () => {
   const [announcements, setAnnouncements] = useState([])
-  const [currentIndex, setCurrentIndex] = useState(0)
-  const [isTransitioning, setIsTransitioning] = useState(false)
-  const [progressWidth, setProgressWidth] = useState(0)
+  const [isScrolling, setIsScrolling] = useState(false)
+  const [isMobile, setIsMobile] = useState(false)
+
+  // Check if device is mobile
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth <= 768)
+    }
+    
+    checkMobile()
+    window.addEventListener('resize', checkMobile)
+    
+    return () => window.removeEventListener('resize', checkMobile)
+  }, [])
 
   // Fetch active announcements
   useEffect(() => {
@@ -23,6 +34,10 @@ const InfoBanner = () => {
         }
 
         setAnnouncements(data || [])
+        // Start scrolling after announcements are loaded
+        if (data && data.length > 0) {
+          setIsScrolling(true)
+        }
       } catch (error) {
         console.error('Error:', error)
       }
@@ -31,59 +46,24 @@ const InfoBanner = () => {
     fetchAnnouncements()
   }, [])
 
-  // Auto-rotate announcements with smooth transitions
-  useEffect(() => {
-    if (announcements.length <= 1) return
-
-    const interval = setInterval(() => {
-      setIsTransitioning(true)
-      setTimeout(() => {
-        setCurrentIndex((prev) => (prev + 1) % announcements.length)
-        setIsTransitioning(false)
-      }, 400) // Transition duration
-    }, 60000) // Change every 1 minute (60 seconds)
-
-    return () => clearInterval(interval)
-  }, [announcements.length])
-
-  // Progress bar animation - fills over 60 seconds
-  useEffect(() => {
-    if (announcements.length <= 1) return
-
-    // Reset progress when announcement changes
-    setProgressWidth(0)
-    
-    // Animate progress bar over 60 seconds
-    const progressInterval = setInterval(() => {
-      setProgressWidth(prev => {
-        if (prev >= 100) return 100
-        return prev + (100 / 60) // Increment to reach 100% in 60 seconds
-      })
-    }, 1000) // Update every 1 second
-
-    return () => clearInterval(progressInterval)
-  }, [currentIndex, announcements.length])
-
   // Don't show banner if no announcements
   if (announcements.length === 0) return null
 
-  const currentAnnouncement = announcements[currentIndex]
-
-  // Get modern banner styling based on type
-  const getBannerStyle = (type) => {
+  // Get professional news ticker styling based on type
+  const getTickerStyle = (type) => {
     switch (type) {
       case 'warning':
-        return 'from-amber-500 via-orange-500 to-yellow-500 border-amber-400/30'
+        return 'border-l-amber-500 bg-gradient-to-r from-amber-500/10 to-transparent'
       case 'success':
-        return 'from-emerald-500 via-green-500 to-teal-500 border-emerald-400/30'
+        return 'border-l-emerald-500 bg-gradient-to-r from-emerald-500/10 to-transparent'
       case 'error':
-        return 'from-rose-500 via-red-500 to-pink-500 border-rose-400/30'
+        return 'border-l-red-500 bg-gradient-to-r from-red-500/10 to-transparent'
       default:
-        return 'from-blue-500 via-indigo-500 to-purple-500 border-blue-400/30'
+        return 'border-l-blue-500 bg-gradient-to-r from-blue-500/10 to-transparent'
     }
   }
 
-  // Get type icon
+  // Get type icon for news ticker
   const getTypeIcon = (type) => {
     switch (type) {
       case 'warning':
@@ -91,157 +71,286 @@ const InfoBanner = () => {
       case 'success':
         return '✅'
       case 'error':
-        return '❌'
+        return '🚨'
       default:
         return 'ℹ️'
     }
   }
 
+  // Get type label for news ticker
+  const getTypeLabel = (type) => {
+    switch (type) {
+      case 'warning':
+        return 'WARNING'
+      case 'success':
+        return 'SUCCESS'
+      case 'error':
+        return 'BREAKING'
+      default:
+        return 'INFO'
+    }
+  }
+
+  // Calculate animation duration - optimized for mobile and desktop
+  const getAnimationDuration = () => {
+    const totalLength = announcements.reduce((acc, ann) => 
+      acc + ann.title.length + ann.message.length, 0)
+    
+    if (isMobile) {
+      // Mobile: Vertical scrolling - slower for readability
+      return Math.max(15, Math.min(30, 15 + (totalLength / 20)))
+    } else {
+      // Desktop: Horizontal scrolling - professional pace
+      return Math.max(20, Math.min(50, 20 + (totalLength / 15)))
+    }
+  }
+
+  // Mobile: Vertical scrolling ticker
+  const MobileTicker = () => (
+    <div className="relative h-24 bg-black overflow-hidden">
+      {/* Vertical scrolling content */}
+      <div 
+        className={`flex flex-col h-full ${
+          isScrolling ? 'animate-scroll-up-smooth' : ''
+        }`}
+        style={{
+          animationDuration: `${getAnimationDuration()}s`,
+          animationIterationCount: 'infinite',
+          animationTimingFunction: 'linear'
+        }}
+      >
+        {/* First set of announcements */}
+        {announcements.map((announcement, index) => (
+          <div
+            key={`mobile-first-${announcement.id}-${index}`}
+            className={`flex-shrink-0 p-3 mx-2 my-1 border-l-4 ${getTickerStyle(announcement.type)} 
+                       hover:bg-gray-900/50 transition-colors duration-200 cursor-pointer rounded-r-lg`}
+          >
+            {/* Type Badge */}
+            <div className="flex items-center space-x-2 mb-1">
+              <span className="text-sm">{getTypeIcon(announcement.type)}</span>
+              <span className={`px-2 py-0.5 rounded text-xs font-bold tracking-wider text-white
+                              ${announcement.type === 'warning' ? 'bg-amber-600' :
+                                announcement.type === 'success' ? 'bg-emerald-600' :
+                                announcement.type === 'error' ? 'bg-red-600' :
+                                'bg-blue-600'}`}>
+                {getTypeLabel(announcement.type)}
+              </span>
+            </div>
+
+            {/* News Content - FULL TEXT VISIBLE on mobile */}
+            <div className="space-y-1">
+              <h3 className="text-white font-semibold text-sm tracking-wide leading-tight">
+                {announcement.title}
+              </h3>
+              <p className="text-gray-300 text-xs leading-relaxed break-words">
+                {announcement.message}
+              </p>
+            </div>
+
+            {/* Time Stamp */}
+            <div className="text-gray-500 text-xs font-mono mt-1">
+              {new Date(announcement.created_at).toLocaleTimeString('en-US', {
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: false
+              })}
+            </div>
+          </div>
+        ))}
+
+        {/* Duplicate announcements for seamless loop */}
+        {announcements.map((announcement, index) => (
+          <div
+            key={`mobile-second-${announcement.id}-${index}`}
+            className={`flex-shrink-0 p-3 mx-2 my-1 border-l-4 ${getTickerStyle(announcement.type)} 
+                       hover:bg-gray-900/50 transition-colors duration-200 cursor-pointer rounded-r-lg`}
+          >
+            {/* Type Badge */}
+            <div className="flex items-center space-x-2 mb-1">
+              <span className="text-sm">{getTypeIcon(announcement.type)}</span>
+              <span className={`px-2 py-0.5 rounded text-xs font-bold tracking-wider text-white
+                              ${announcement.type === 'warning' ? 'bg-amber-600' :
+                                announcement.type === 'success' ? 'bg-emerald-600' :
+                                announcement.type === 'error' ? 'bg-red-600' :
+                                'bg-blue-600'}`}>
+                {getTypeLabel(announcement.type)}
+              </span>
+            </div>
+
+            {/* News Content - FULL TEXT VISIBLE on mobile */}
+            <div className="space-y-1">
+              <h3 className="text-white font-semibold text-sm tracking-wide leading-tight">
+                {announcement.title}
+              </h3>
+              <p className="text-gray-300 text-xs leading-relaxed break-words">
+                {announcement.message}
+              </p>
+            </div>
+
+            {/* Time Stamp */}
+            <div className="text-gray-500 text-xs font-mono mt-1">
+              {new Date(announcement.created_at).toLocaleTimeString('en-US', {
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: false
+              })}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Mobile fade effects */}
+      <div className="absolute top-0 left-0 w-full h-4 bg-gradient-to-b from-black to-transparent pointer-events-none z-10"></div>
+      <div className="absolute bottom-0 left-0 w-full h-4 bg-gradient-to-t from-black to-transparent pointer-events-none z-10"></div>
+    </div>
+  )
+
+  // Desktop: Horizontal scrolling ticker
+  const DesktopTicker = () => (
+    <div className="relative h-20 bg-black overflow-hidden">
+      {/* Horizontal scrolling content */}
+      <div 
+        className={`flex items-center whitespace-nowrap h-full ${
+          isScrolling ? 'animate-scroll-left-ultra-smooth' : ''
+        }`}
+        style={{
+          animationDuration: `${getAnimationDuration()}s`,
+          animationIterationCount: 'infinite',
+          animationTimingFunction: 'linear'
+        }}
+      >
+        {/* Multiple sets for seamless looping */}
+        {[1, 2, 3, 4, 5].map((setNum) => (
+          announcements.map((announcement, index) => (
+            <div
+              key={`desktop-${setNum}-${announcement.id}-${index}`}
+              className={`flex items-center space-x-6 px-8 py-4 mx-6 border-l-4 ${getTickerStyle(announcement.type)} 
+                         hover:bg-gray-900/50 transition-colors duration-200 cursor-pointer`}
+              style={{ minWidth: 'max-content' }}
+            >
+              {/* Type Badge */}
+              <div className="flex items-center space-x-2">
+                <span className="text-lg">{getTypeIcon(announcement.type)}</span>
+                <span className={`px-3 py-1 rounded text-xs font-bold tracking-wider text-white
+                                ${announcement.type === 'warning' ? 'bg-amber-600' :
+                                  announcement.type === 'success' ? 'bg-emerald-600' :
+                                  announcement.type === 'error' ? 'bg-red-600' :
+                                  'bg-blue-600'}`}>
+                  {getTypeLabel(announcement.type)}
+                </span>
+              </div>
+
+              {/* News Content */}
+              <div className="flex items-center space-x-4">
+                <h3 className="text-white font-semibold text-sm tracking-wide whitespace-nowrap">
+                  {announcement.title}
+                </h3>
+                <span className="text-gray-400 text-xs">•</span>
+                <p className="text-gray-300 text-sm whitespace-nowrap">
+                  {announcement.message}
+                </p>
+              </div>
+
+              {/* Time Stamp */}
+              <div className="text-gray-500 text-xs font-mono whitespace-nowrap">
+                {new Date(announcement.created_at).toLocaleTimeString('en-US', {
+                  hour: '2-digit',
+                  minute: '2-digit',
+                  hour12: false
+                })}
+              </div>
+            </div>
+          ))
+        ))}
+      </div>
+
+      {/* Desktop fade effects */}
+      <div className="absolute left-0 top-0 w-8 h-full bg-gradient-to-r from-black to-transparent pointer-events-none z-10"></div>
+      <div className="absolute right-0 top-0 w-8 h-full bg-gradient-to-l from-black to-transparent pointer-events-none z-10"></div>
+    </div>
+  )
+
   return (
     <div className="relative mb-4">
-      {/* Modern Gradient Banner - Mobile Responsive */}
-      <div className="relative overflow-hidden">
-        <div
-          className={`bg-gradient-to-r ${getBannerStyle(currentAnnouncement.type)} 
-                     border border-white/20 rounded-2xl sm:rounded-3xl shadow-xl sm:shadow-2xl 
-                     transform transition-all duration-500 ease-out
-                     ${isTransitioning ? 'scale-95 opacity-80 translate-y-1' : 'scale-100 opacity-100 translate-y-0'}
-                     hover:scale-[1.01] sm:hover:scale-[1.02] hover:shadow-2xl sm:hover:shadow-3xl hover:-translate-y-0.5 sm:hover:-translate-y-1`}
-        >
-          {/* Unique English Learning & Somali Culture Background - Mobile Responsive */}
-          <div className="absolute inset-0 opacity-15">
-            {/* Floating English books - hidden on mobile to reduce clutter */}
-            <div className="hidden sm:block absolute top-4 left-8 w-16 h-20 bg-white/20 rounded-lg transform rotate-12 animate-float-slow"></div>
-            <div className="hidden sm:block absolute top-12 right-12 w-12 h-16 bg-white/15 rounded-lg transform -rotate-6 animate-float-medium"></div>
-            <div className="hidden sm:block absolute bottom-8 left-16 w-14 h-18 bg-white/10 rounded-lg transform rotate-3 animate-float-fast"></div>
-            
-            {/* Somali flag colors (blue, white, green) - much smaller on mobile */}
-            <div className="absolute top-1/4 right-1/4 w-8 sm:w-12 md:w-20 h-1.5 sm:h-2 md:h-3 bg-blue-400/20 rounded-full animate-pulse"></div>
-            <div className="absolute top-1/3 right-1/3 w-6 sm:w-10 md:w-16 h-1.5 sm:h-2 md:h-3 bg-white/30 rounded-full animate-pulse delay-1000"></div>
-            <div className="absolute top-2/5 right-2/5 w-7 sm:w-11 md:w-18 h-1.5 sm:h-2 md:h-3 bg-green-400/20 rounded-full animate-pulse delay-2000"></div>
-            
-            {/* English letters floating - much smaller on mobile */}
-            <div className="absolute top-3 sm:top-6 left-1/4 text-white/20 text-sm sm:text-lg md:text-2xl font-bold animate-bounce">E</div>
-            <div className="absolute top-8 sm:top-16 right-1/3 text-white/15 text-xs sm:text-base md:text-xl font-bold animate-bounce delay-500">N</div>
-            <div className="absolute bottom-6 sm:bottom-12 left-1/3 text-white/25 text-xs sm:text-sm md:text-lg font-bold animate-bounce delay-1000">G</div>
-            
-            {/* Learning symbols - much smaller on mobile */}
-            <div className="absolute top-1/2 left-1/2 w-8 sm:w-16 md:w-24 h-8 sm:h-16 md:h-24 bg-white/5 rounded-full blur-xl sm:blur-2xl animate-ping"></div>
-            <div className="absolute bottom-2 sm:bottom-4 right-4 sm:right-8 w-6 sm:w-12 md:w-20 h-6 sm:h-12 md:h-20 bg-white/8 rounded-full blur-lg sm:blur-xl animate-pulse"></div>
-            
-            {/* Connection lines representing learning - hidden on mobile */}
-            <div className="hidden sm:block absolute top-1/4 left-1/4 w-32 h-0.5 bg-gradient-to-r from-transparent via-white/20 to-transparent transform rotate-45 animate-pulse"></div>
-            <div className="hidden sm:block absolute bottom-1/4 right-1/4 w-28 h-0.5 bg-gradient-to-r from-transparent via-white/15 to-transparent transform -rotate-45 animate-pulse delay-1000"></div>
-          </div>
-
-          {/* Content - Centered and Mobile Responsive */}
-          <div className="relative p-3 sm:p-4 md:p-6 text-white text-center">
-            {/* Header with icon and title */}
-            <div className="flex items-center justify-center space-x-1 sm:space-x-2 md:space-x-3 mb-1 sm:mb-2 md:mb-3">
-              <span className="text-xl sm:text-2xl md:text-3xl animate-bounce">{getTypeIcon(currentAnnouncement.type)}</span>
-              <h3 className="text-base sm:text-lg md:text-xl lg:text-2xl font-black tracking-wide text-white drop-shadow-lg leading-tight">
-                {currentAnnouncement.title}
-              </h3>
+      {/* Professional TV News Ticker Container */}
+      <div className="bg-black border border-gray-800 rounded-lg shadow-2xl overflow-hidden">
+        {/* News Ticker Header Bar */}
+        <div className="bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900 px-3 sm:px-4 py-2 border-b border-gray-700">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-2 sm:space-x-3">
+              {/* News Channel Logo */}
+              <div className="w-5 h-5 sm:w-6 sm:h-6 bg-red-600 rounded-full flex items-center justify-center">
+                <span className="text-white text-xs font-bold">H</span>
+              </div>
+              <span className="text-red-500 font-bold text-xs sm:text-sm tracking-wider">HADALHUB NEWS</span>
             </div>
             
-            {/* Message with responsive typography */}
-            <p className="text-white/95 text-xs sm:text-sm md:text-base lg:text-lg leading-relaxed font-bold max-w-3xl mx-auto px-1 sm:px-2 md:px-0">
-              {currentAnnouncement.message}
-            </p>
+            {/* Live Indicator */}
+            <div className="flex items-center space-x-1 sm:space-x-2">
+              <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-red-500 rounded-full animate-pulse"></div>
+              <span className="text-red-500 text-xs font-semibold tracking-wider">LIVE</span>
+            </div>
           </div>
+        </div>
 
-          {/* Animated progress bar - now properly 60 seconds */}
-          <div className="absolute bottom-0 left-0 h-1 sm:h-1.5 bg-white/30 w-full overflow-hidden rounded-b-2xl sm:rounded-b-3xl">
-            <div 
-              className="h-full bg-white/80 rounded-b-2xl sm:rounded-b-3xl transition-all duration-1000 ease-linear
-                         shadow-lg shadow-white/30"
-              style={{
-                width: `${progressWidth}%`
-              }}
-            />
+        {/* Responsive Ticker - Mobile vs Desktop */}
+        {isMobile ? <MobileTicker /> : <DesktopTicker />}
+
+        {/* News Ticker Footer */}
+        <div className="bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900 px-3 sm:px-4 py-2 border-t border-gray-700">
+          <div className="flex items-center justify-between text-xs text-gray-400">
+            <span className="tracking-wider text-xs sm:text-sm">ENGLISH LEARNING PLATFORM</span>
+            <span className="font-mono text-xs sm:text-sm">{new Date().toLocaleDateString('en-US', {
+              weekday: 'long',
+              year: 'numeric',
+              month: 'long',
+              day: 'numeric'
+            })}</span>
           </div>
-
-          {/* Shimmer effect */}
-          <div className="absolute inset-0 -skew-x-12 bg-gradient-to-r from-transparent via-white/10 to-transparent 
-                         transform translate-x-[-100%] animate-shimmer"></div>
         </div>
       </div>
 
-      {/* Enhanced multiple announcements indicator */}
+      {/* Multiple Announcements Indicator */}
       {announcements.length > 1 && (
-        <div className="flex justify-center mt-2 sm:mt-4 space-x-1 sm:space-x-2">
+        <div className="flex justify-center mt-3 space-x-2">
           {announcements.map((_, index) => (
-            <button
+            <div
               key={index}
-              onClick={() => {
-                setIsTransitioning(true)
-                setTimeout(() => {
-                  setCurrentIndex(index)
-                  setIsTransitioning(false)
-                }, 400)
-              }}
-              className={`w-3 h-3 sm:w-4 sm:h-4 rounded-full transition-all duration-500 ease-out cursor-pointer
-                         ${index === currentIndex 
-                           ? 'bg-white scale-125 shadow-lg shadow-white/50' 
-                           : 'bg-white/30 hover:bg-white/50 hover:scale-110'
-                         }`}
+              className="w-2 h-2 bg-gray-600 rounded-full animate-pulse"
             />
           ))}
         </div>
       )}
 
-      {/* Floating particles effect - Mobile Responsive */}
-      <div className="absolute inset-0 pointer-events-none overflow-hidden">
-        <div className="absolute top-2 sm:top-4 left-2 sm:left-4 w-1 sm:w-1.5 md:w-2 h-1 sm:h-1.5 md:h-2 bg-white/20 rounded-full animate-ping"></div>
-        <div className="absolute top-4 sm:top-8 right-4 sm:right-8 w-0.5 sm:w-1 h-0.5 sm:h-1 bg-white/30 rounded-full animate-pulse"></div>
-        <div className="absolute bottom-3 sm:bottom-6 left-6 sm:left-12 w-0.5 sm:w-1 md:w-1.5 h-0.5 sm:h-1 md:h-1.5 bg-white/25 rounded-full animate-bounce"></div>
-        <div className="absolute top-1/4 right-1/4 w-0.5 sm:w-1 h-0.5 sm:h-1 bg-white/15 rounded-full animate-ping delay-1000"></div>
-      </div>
-
-      {/* Custom CSS Animations */}
+      {/* Custom CSS for both mobile and desktop animations */}
       <style jsx>{`
-        @keyframes shimmer {
-          0% { transform: translateX(-100%) skewX(-12deg); }
-          100% { transform: translateX(200%) skewX(-12deg); }
+        /* Mobile: Vertical scrolling animation */
+        @keyframes scroll-up-smooth {
+          0% {
+            transform: translateY(0);
+          }
+          100% {
+            transform: translateY(-50%);
+          }
         }
         
-        @keyframes float-slow {
-          0%, 100% { transform: translateY(0px) rotate(12deg); }
-          50% { transform: translateY(-10px) rotate(12deg); }
+        .animate-scroll-up-smooth {
+          animation: scroll-up-smooth linear infinite;
+        }
+
+        /* Desktop: Horizontal scrolling animation */
+        @keyframes scroll-left-ultra-smooth {
+          0% {
+            transform: translateX(0);
+          }
+          100% {
+            transform: translateX(-100%);
+          }
         }
         
-        @keyframes float-medium {
-          0%, 100% { transform: translateY(0px) rotate(-6deg); }
-          50% { transform: translateY(-8px) rotate(-6deg); }
-        }
-        
-        @keyframes float-fast {
-          0%, 100% { transform: translateY(0px) rotate(3deg); }
-          50% { transform: translateY(-12px) rotate(3deg); }
-        }
-        
-        .animate-shimmer {
-          animation: shimmer 3s ease-in-out infinite;
-        }
-        
-        .animate-float-slow {
-          animation: float-slow 4s ease-in-out infinite;
-        }
-        
-        .animate-float-medium {
-          animation: float-medium 3s ease-in-out infinite;
-        }
-        
-        .animate-float-fast {
-          animation: float-fast 2.5s ease-in-out infinite;
-        }
-        
-        .delay-1000 {
-          animation-delay: 1s;
-        }
-        
-        .delay-2000 {
-          animation-delay: 2s;
+        .animate-scroll-left-ultra-smooth {
+          animation: scroll-left-ultra-smooth linear infinite;
         }
       `}</style>
     </div>

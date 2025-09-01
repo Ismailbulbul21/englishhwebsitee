@@ -120,43 +120,49 @@ export default function Dashboard({ user }) {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900">
-      {/* Minimal Header */}
+            {/* Minimal Header - Mobile Responsive */}
       <header className="border-b border-white/10 backdrop-blur-sm">
-        <div className="max-w-4xl mx-auto px-6 py-4">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 py-3 sm:py-4">
           <div className="flex justify-between items-center">
-            <div className="flex items-center space-x-4">
-              <div className="text-xl font-light text-white">HadalHub</div>
-              <div className={`bg-gradient-to-r ${getLevelColor(user?.english_level)} px-3 py-1 rounded-full text-xs font-medium text-white/90`}>
+            {/* Left side - Logo and Level */}
+            <div className="flex items-center space-x-2 sm:space-x-4">
+              <div className="text-lg sm:text-xl font-light text-white">HadalHub</div>
+              <div className={`bg-gradient-to-r ${getLevelColor(user?.english_level)} px-2 sm:px-3 py-1 rounded-full text-xs font-medium text-white/90`}>
                 {user?.english_level}
               </div>
             </div>
             
-            <div className="flex items-center space-x-4">
-              <span className="text-white/70 text-sm">{user?.display_name}</span>
+            {/* Right side - User info and actions */}
+            <div className="flex items-center space-x-2 sm:space-x-4">
+              {/* User name - hidden on very small screens */}
+              <span className="hidden sm:block text-white/70 text-sm">{user?.display_name}</span>
               
               {/* Admin Dashboard Access - Only show to real admins */}
               {!adminCheckLoading && isAdmin && (
                 <Link
                   to="/admin"
-                  className="bg-purple-600/20 hover:bg-purple-600/30 text-purple-400 px-3 py-1 rounded-lg text-sm transition-colors flex items-center space-x-1"
+                  className="bg-purple-600/20 hover:bg-purple-600/30 text-purple-400 px-2 sm:px-3 py-1 rounded-lg text-xs sm:text-sm transition-colors flex items-center space-x-1"
                   title="Admin Dashboard"
                 >
-                  <span>Admin</span>
+                  <span className="hidden sm:inline">Admin</span>
+                  <span className="sm:hidden">A</span>
                 </Link>
               )}
               
               {/* About Link */}
               <Link
                 to="/about"
-                className="bg-blue-600/20 hover:bg-blue-600/30 text-blue-400 px-3 py-1 rounded-lg text-sm transition-colors flex items-center space-x-1"
+                className="bg-blue-600/20 hover:bg-blue-600/30 text-blue-400 px-2 sm:px-3 py-1 rounded-lg text-xs sm:text-sm transition-colors flex items-center space-x-1"
                 title="About HadalHub"
               >
-                <span>About</span>
+                <span className="hidden sm:inline">About</span>
+                <span className="sm:hidden">ℹ️</span>
               </Link>
               
               <button
                 onClick={handleSignOut}
-                className="text-white/50 hover:text-white/80 transition-colors"
+                className="text-white/50 hover:text-white/80 transition-colors p-1"
+                title="Sign Out"
               >
                 <LogOut className="h-4 w-4" />
               </button>
@@ -171,24 +177,24 @@ export default function Dashboard({ user }) {
       {/* Info Banner */}
       <InfoBanner />
 
-      <div className="max-w-4xl mx-auto px-6 py-12">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
         {/* Welcome Section */}
-        <div className="text-center mb-12">
-          <h1 className="text-3xl font-light text-white mb-3">
+        <div className="text-center mb-8 sm:mb-12">
+          <h1 className="text-2xl sm:text-3xl font-light text-white mb-2 sm:mb-3">
             Welcome back
           </h1>
-          <p className="text-white/60">
+          <p className="text-white/60 text-sm sm:text-base">
             Continue your English journey
           </p>
         </div>
 
         {/* Main Actions Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 mb-6 sm:mb-8">
           
           {/* Learn Card */}
           <Link
             to="/lessons"
-            className="group bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-8 hover:bg-white/10 transition-all duration-300 hover:scale-105"
+            className="group bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-6 sm:p-8 hover:bg-white/10 transition-all duration-300 hover:scale-105"
           >
             <div className="flex items-center justify-between mb-6">
               <div className="bg-blue-500/20 rounded-full p-3">
@@ -205,7 +211,7 @@ export default function Dashboard({ user }) {
           {/* Chat Card */}
           <Link
             to="/chat"
-            className="group bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-8 hover:bg-white/10 transition-all duration-300 hover:scale-105"
+            className="group bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-6 sm:p-8 hover:bg-white/10 transition-all duration-300 hover:scale-105"
           >
             <div className="flex items-center justify-between mb-6">
               <div className="bg-green-500/20 rounded-full p-3">
@@ -225,7 +231,7 @@ export default function Dashboard({ user }) {
           {/* Quiz Card */}
           <Link
             to="/quiz"
-            className="group bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-8 hover:bg-white/10 transition-all duration-300 hover:scale-105"
+            className="group bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-6 sm:p-8 hover:bg-white/10 transition-all duration-300 hover:scale-105"
           >
             <div className="flex items-center justify-between mb-6">
               <div className="bg-yellow-500/20 rounded-full p-3">
@@ -242,7 +248,7 @@ export default function Dashboard({ user }) {
           {/* Winner Card */}
           <Link
             to="/voice-challenge"
-            className="group bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-8 hover:bg-white/10 transition-all duration-300 hover:scale-105"
+            className="group bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-6 sm:p-8 hover:bg-white/10 transition-all duration-300 hover:scale-105"
           >
             <div className="flex items-center justify-between mb-6">
               <div className="bg-yellow-500/20 rounded-full p-3">
@@ -259,26 +265,26 @@ export default function Dashboard({ user }) {
         </div>
 
         {/* Minimal Stats */}
-        <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-6">
-          <div className="grid grid-cols-3 gap-6 text-center">
+        <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-4 sm:p-6">
+          <div className="grid grid-cols-3 gap-4 sm:gap-6 text-center">
             <div>
               <div className="flex items-center justify-center mb-2">
-                <Flame className="h-5 w-5 text-orange-400 mr-2" />
-                <span className="text-2xl font-light text-white">{stats?.current_streak || 0}</span>
+                <Flame className="h-4 w-4 sm:h-5 sm:w-5 text-orange-400 mr-1 sm:mr-2" />
+                <span className="text-xl sm:text-2xl font-light text-white">{stats?.current_streak || 0}</span>
               </div>
               <p className="text-white/50 text-xs">Day streak</p>
             </div>
             <div>
               <div className="flex items-center justify-center mb-2">
-                <BookOpen className="h-5 w-5 text-blue-400 mr-2" />
-                <span className="text-2xl font-light text-white">{stats?.total_lessons_completed || 0}</span>
+                <BookOpen className="h-4 w-4 sm:h-5 sm:w-5 text-blue-400 mr-1 sm:mr-2" />
+                <span className="text-xl sm:text-2xl font-light text-white">{stats?.total_lessons_completed || 0}</span>
               </div>
               <p className="text-white/50 text-xs">Lessons</p>
             </div>
             <div>
               <div className="flex items-center justify-center mb-2">
-                <Trophy className="h-5 w-5 text-yellow-400 mr-2" />
-                <span className="text-2xl font-light text-white">{stats?.total_quizzes_passed || 0}</span>
+                <Trophy className="h-4 w-4 sm:h-5 sm:w-5 text-yellow-400 mr-1 sm:mr-2" />
+                <span className="text-xl sm:text-2xl font-light text-white">{stats?.total_quizzes_passed || 0}</span>
               </div>
               <p className="text-white/50 text-xs">Quizzes</p>
             </div>
