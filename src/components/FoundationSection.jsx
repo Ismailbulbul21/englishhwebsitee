@@ -460,14 +460,14 @@ export default function FoundationSection({ playAudio }) {
     { letter: 'G', example: 'Good', somali: 'Fiican', image: 'https://images.unsplash.com/photo-1513475382585-d06e58bcb0e0?w=300&h=300&fit=crop&crop=center', emoji: '👍' },
     { letter: 'H', example: 'House', somali: 'Guri', image: 'https://images.unsplash.com/photo-1570129477492-45c003edd2be?w=300&h=300&fit=crop&crop=center', emoji: '🏠' },
     { letter: 'I', example: 'Ice', somali: 'Baraf', image: 'https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=300&h=300&fit=crop&crop=center', emoji: '🧊' },
-    { letter: 'J', example: 'Jump', somali: 'Bood', image: 'https://images.unsplash.com/photo-1544717297-fa95b6ee9643?w=300&h=300&fit=crop&crop=center', emoji: '🏃' },
+    { letter: 'J', example: 'Job', somali: 'Shaqo', image: 'https://images.unsplash.com/photo-1556761175-b413da4baf72?w=300&h=300&fit=crop&crop=center', emoji: '💼' },
     { letter: 'K', example: 'Key', somali: 'Fure', image: 'https://images.unsplash.com/photo-1582139329536-e7284fece509?w=300&h=300&fit=crop&crop=center', emoji: '🔑' },
     { letter: 'L', example: 'Love', somali: 'Jacayl', image: 'https://images.unsplash.com/photo-1516589178581-6cd7833ae3b2?w=300&h=300&fit=crop&crop=center', emoji: '❤️' },
     { letter: 'M', example: 'Money', somali: 'Lacag', image: 'https://images.unsplash.com/photo-1554672723-d42a16e533db?w=300&h=300&fit=crop&crop=center', emoji: '💰' },
-    { letter: 'N', example: 'Name', somali: 'Magac', image: 'https://images.unsplash.com/photo-1586953208448-b95a79798f07?w=300&h=300&fit=crop&crop=center', emoji: '📛' },
+    { letter: 'N', example: 'Night', somali: 'Habeen', image: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=300&h=300&fit=crop&crop=center', emoji: '🌙' },
     { letter: 'O', example: 'Open', somali: 'Fur', image: 'https://images.unsplash.com/photo-1505226755623-e9436dab1cd5?w=300&h=300&fit=crop&crop=center', emoji: '🚪' },
     { letter: 'P', example: 'Phone', somali: 'Taleefan', image: 'https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=300&h=300&fit=crop&crop=center', emoji: '📱' },
-    { letter: 'Q', example: 'Question', somali: 'Su\'aal', image: 'https://images.unsplash.com/photo-1606092195730-5d7b9af1efc5?w=300&h=300&fit=crop&crop=center', emoji: '❓' },
+    { letter: 'Q', example: 'Question', somali: 'Su\'aal', image: 'https://images.unsplash.com/photo-1606092195730-5d7b9af1efc5?w=300&h=300&fit=crop&crop=center', emoji: '🤔' },
     { letter: 'R', example: 'Road', somali: 'Waddo', image: 'https://images.unsplash.com/photo-1449824913935-59a10b8d2000?w=300&h=300&fit=crop&crop=center', emoji: '🛣️' },
     { letter: 'S', example: 'Sun', somali: 'Qorax', image: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=300&h=300&fit=crop&crop=center', emoji: '☀️' },
     { letter: 'T', example: 'Time', somali: 'Waqti', image: 'https://images.unsplash.com/photo-1501139083538-0139583c060f?w=300&h=300&fit=crop&crop=center', emoji: '⏰' },
@@ -475,8 +475,8 @@ export default function FoundationSection({ playAudio }) {
     { letter: 'V', example: 'Voice', somali: 'Cod', image: 'https://images.unsplash.com/photo-1590736969955-71cc94901144?w=300&h=300&fit=crop&crop=center', emoji: '🔊' },
     { letter: 'W', example: 'Water', somali: 'Biyo', image: 'https://images.unsplash.com/photo-1548839140-29a749e1cf4d?w=300&h=300&fit=crop&crop=center', emoji: '💧' },
     { letter: 'X', example: 'X-ray', somali: 'Raajo', image: 'https://images.unsplash.com/photo-1559757175-0eb30cd8c063?w=300&h=300&fit=crop&crop=center', emoji: '🩻' },
-    { letter: 'Y', example: 'Yes', somali: 'Haa', image: 'https://images.unsplash.com/photo-1513475382585-d06e58bcb0e0?w=300&h=300&fit=crop&crop=center', emoji: '✅' },
-    { letter: 'Z', example: 'Zero', somali: 'Eber', image: 'https://images.unsplash.com/photo-1518107616985-bd48230d3b20?w=300&h=300&fit=crop&crop=center', emoji: '0️⃣' }
+    { letter: 'Y', example: 'Year', somali: 'Sano', image: 'https://images.unsplash.com/photo-1513475382585-d06e58bcb0e0?w=300&h=300&fit=crop&crop=center', emoji: '📅' },
+    { letter: 'Z', example: 'Zoo', somali: 'Xayawaan', image: 'https://images.unsplash.com/photo-1559757175-0eb30cd8c063?w=300&h=300&fit=crop&crop=center', emoji: '🦁' }
   ]
 
 
