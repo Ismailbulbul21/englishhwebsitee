@@ -301,6 +301,38 @@ export default function Dashboard({ user }) {
             <ArrowRight className="h-4 w-4" />
           </Link>
         </div>
+
+        {/* Footer Links */}
+        <div className="mt-12 pt-8 border-t border-white/10">
+          <div className="flex flex-col sm:flex-row items-center justify-between space-y-4 sm:space-y-0">
+            {/* Left side - Legal Links */}
+            <div className="flex items-center space-x-6 text-xs text-white/40">
+              <Link 
+                to="/privacy-policy" 
+                className="hover:text-white/60 transition-colors underline"
+              >
+                Privacy Policy
+              </Link>
+              <Link 
+                to="/contact" 
+                className="hover:text-white/60 transition-colors underline"
+              >
+                Contact Us
+              </Link>
+              <Link 
+                to="/about" 
+                className="hover:text-white/60 transition-colors underline"
+              >
+                About
+              </Link>
+            </div>
+
+            {/* Right side - Copyright */}
+            <div className="text-xs text-white/40">
+              © {new Date().getFullYear()} TikTok English. Built with ❤️ for learners.
+            </div>
+          </div>
+        </div>
       </div>
 
     </div>

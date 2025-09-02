@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo, useCallback } from 'react'
 import { Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
+import FoundationSection from './FoundationSection'
 import { 
   ArrowLeft, 
   BookOpen, 
@@ -17,7 +18,7 @@ export default function Lessons({ user }) {
   const [selectedLesson, setSelectedLesson] = useState(null)
   const [userProgress, setUserProgress] = useState({})
   const [loading, setLoading] = useState(true)
-  const [activeTab, setActiveTab] = useState('grammar')
+  const [activeTab, setActiveTab] = useState(user?.english_level === 'beginner' ? 'foundation' : 'grammar')
   const [completionMessage, setCompletionMessage] = useState('')
   
   // NEW: Enhanced lesson features
@@ -1396,19 +1397,20 @@ export default function Lessons({ user }) {
   // 🚀 PERFORMANCE FIX 3: Memoize level info and lesson filtering (MOVED TO TOP)
   const levelInfo = useMemo(() => getLevelInfo(user?.english_level), [user?.english_level])
   
-  const { grammarLessons, vocabularyLessons, lifeSkillsLessons } = useMemo(() => {
+  const { foundationLessons, grammarLessons, vocabularyLessons, lifeSkillsLessons } = useMemo(() => {
     console.log('📊 Filtering lessons (memoized):', lessons.length)
     const startTime = performance.now()
     
     const result = {
+      foundationLessons: lessons.filter(l => l.type === 'foundation'),
       grammarLessons: lessons.filter(l => l.type === 'grammar'),
       vocabularyLessons: lessons.filter(l => l.type === 'vocabulary'),
-      lifeSkillsLessons: lessons.filter(l => ['conversations', 'health', 'travel', 'work'].includes(l.type))
+      lifeSkillsLessons: [] // HIDDEN: lessons.filter(l => ['conversations', 'health', 'travel', 'work'].includes(l.type))
     }
     
     const endTime = performance.now()
     console.log(`⚡ Lesson filtering completed in ${Math.round(endTime - startTime)}ms`)
-    console.log(`📈 Grammar: ${result.grammarLessons.length}, Vocabulary: ${result.vocabularyLessons.length}, Life Skills: ${result.lifeSkillsLessons.length}`)
+    console.log(`📈 Foundation: ${result.foundationLessons.length}, Grammar: ${result.grammarLessons.length}, Vocabulary: ${result.vocabularyLessons.length}, Life Skills: ${result.lifeSkillsLessons.length}`)
     
     return result
   }, [lessons])
@@ -1419,6 +1421,15 @@ export default function Lessons({ user }) {
     const startTime = performance.now()
     
     const map = {}
+    
+    // Pre-calculate for foundation lessons (no locking)
+    foundationLessons.forEach((lesson, index) => {
+      const progress = userProgress[lesson.id]
+      const isCompleted = progress?.is_completed
+      const isLocked = false // Foundation lessons are never locked
+      
+      map[lesson.id] = { progress, isCompleted, isLocked, index, type: 'foundation' }
+    })
     
     // Pre-calculate for grammar lessons
     grammarLessons.forEach((lesson, index) => {
@@ -1439,19 +1450,19 @@ export default function Lessons({ user }) {
     })
     
     // Pre-calculate for life skills lessons (no locking between different types)
-    lifeSkillsLessons.forEach((lesson, index) => {
-      const progress = userProgress[lesson.id]
-      const isCompleted = progress?.is_completed
-      const isLocked = false // Life skills lessons are not locked
-      
-      map[lesson.id] = { progress, isCompleted, isLocked, index, type: lesson.type }
-    })
+    // HIDDEN: lifeSkillsLessons.forEach((lesson, index) => {
+    //   const progress = userProgress[lesson.id]
+    //   const isCompleted = progress?.is_completed
+    //   const isLocked = false // Life skills lessons are not locked
+    //   
+    //   map[lesson.id] = { progress, isCompleted, isLocked, index, type: lesson.type }
+    // })
     
     const endTime = performance.now()
     console.log(`⚡ Progress calculations completed in ${Math.round(endTime - startTime)}ms`)
     
     return map
-  }, [grammarLessons, vocabularyLessons, lifeSkillsLessons, userProgress])
+  }, [foundationLessons, grammarLessons, vocabularyLessons, lifeSkillsLessons, userProgress])
 
   // 🔧 LOADING SCREEN: Moved after all hooks to prevent hook order violation
   if (loading) {
@@ -1534,9 +1545,10 @@ export default function Lessons({ user }) {
             {/* Lesson Type Tabs - Responsive */}
             <div className="flex space-x-1 bg-gray-800 p-1 rounded-lg mb-6 sm:mb-8">
               {[
+                { key: 'foundation', label: 'Pre-English', icon: '🔤', shortLabel: 'Foundation' },
                 { key: 'grammar', label: 'Grammar', icon: '📝', shortLabel: 'Grammar' },
-                { key: 'vocabulary', label: 'Vocabulary', icon: '📚', shortLabel: 'Vocab' },
-                { key: 'life_skills', label: 'Life Skills', icon: '🌟', shortLabel: 'Skills' }
+                { key: 'vocabulary', label: 'Vocabulary', icon: '📚', shortLabel: 'Vocab' }
+                // { key: 'life_skills', label: 'Life Skills', icon: '🌟', shortLabel: 'Skills' } // HIDDEN
               ].map((tab) => (
                 <button
                   key={tab.key}
@@ -1565,8 +1577,13 @@ export default function Lessons({ user }) {
               ))}
             </div>
 
+            {/* Foundation Content - Beautiful Modern Design */}
+            {activeTab === 'foundation' && (
+              <FoundationSection playAudio={playAudio} />
+            )}
+
             {/* Life Skills Sub-Categories - Only show when Life Skills tab is active */}
-            {activeTab === 'life_skills' && (
+            {/* HIDDEN: {activeTab === 'life_skills' && (
               <div className="mb-6 sm:mb-8">
                 <h3 className="text-lg sm:text-xl font-bold text-white mb-4 text-center sm:text-left">Choose Your Category</h3>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
@@ -1592,26 +1609,17 @@ export default function Lessons({ user }) {
                   ))}
                 </div>
               </div>
-            )}
+            )} */}
 
             {/* Lessons Grid - Responsive */}
-            {activeTab === 'life_skills' ? (
-              // Show message when Life Skills tab is active
-              <div className="col-span-full text-center py-12">
-                <div className="bg-gray-800 rounded-xl p-8 border border-gray-700">
-                  <div className="text-6xl mb-4">🌟</div>
-                  <h3 className="text-2xl font-bold text-white mb-4">Choose Your Learning Category</h3>
-                  <p className="text-gray-300 text-lg mb-6">Click on one of the categories above to start learning practical English phrases for real-life situations.</p>
-                  <div className="flex justify-center">
-                    <div className="text-4xl">👇</div>
-                  </div>
-                </div>
-              </div>
+            {activeTab === 'foundation' ? (
+              // Foundation content is already shown above
+              null
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
                 {(activeTab === 'grammar' ? grammarLessons : 
                   activeTab === 'vocabulary' ? vocabularyLessons : 
-                  ['conversations', 'health', 'travel', 'work'].includes(activeTab) ? lifeSkillsLessons.filter(l => l.type === activeTab) :
+                  // HIDDEN: ['conversations', 'health', 'travel', 'work'].includes(activeTab) ? lifeSkillsLessons.filter(l => l.type === activeTab) :
                   []).map((lesson) => {
                 // 🚀 PERFORMANCE FIX 5: Use pre-calculated progress data
                 const progressData = lessonProgressMap[lesson.id]
@@ -1696,9 +1704,9 @@ export default function Lessons({ user }) {
                 </div>
                 <div className="text-center p-4 bg-gray-700/50 rounded-lg">
                   <div className="text-2xl sm:text-3xl font-bold text-purple-400">
-                    {lifeSkillsLessons.filter(l => userProgress[l.id]?.is_completed).length}
+                    {foundationLessons.filter(l => userProgress[l.id]?.is_completed).length}
                   </div>
-                  <div className="text-sm sm:text-base text-gray-400 mt-1">Life Skills</div>
+                  <div className="text-sm sm:text-base text-gray-400 mt-1">Foundation</div>
                 </div>
                 <div className="text-center p-4 bg-gray-700/50 rounded-lg">
                   <div className="text-2xl sm:text-3xl font-bold text-yellow-400">

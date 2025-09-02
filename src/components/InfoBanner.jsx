@@ -176,7 +176,7 @@ const InfoBanner = () => {
                                 'bg-blue-600'}`}>
                 {getTypeLabel(announcement.type)}
               </span>
-            </div>
+          </div>
 
             {/* News Content - FULL TEXT VISIBLE on mobile */}
             <div className="space-y-1">
@@ -187,7 +187,7 @@ const InfoBanner = () => {
                 {announcement.message}
               </p>
             </div>
-
+            
             {/* Time Stamp */}
             <div className="text-gray-500 text-xs font-mono mt-1">
               {new Date(announcement.created_at).toLocaleTimeString('en-US', {
@@ -214,7 +214,7 @@ const InfoBanner = () => {
         className={`flex items-center whitespace-nowrap h-full ${
           isScrolling ? 'animate-scroll-left-ultra-smooth' : ''
         }`}
-        style={{
+              style={{
           animationDuration: `${getAnimationDuration()}s`,
           animationIterationCount: 'infinite',
           animationTimingFunction: 'linear'

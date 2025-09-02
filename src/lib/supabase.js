@@ -6,7 +6,7 @@ const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
 
 // Validate credentials
 if (!supabaseUrl || !supabaseAnonKey) {
-  throw new Error('Supabase credentials are missing. Please check your environment variables VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY.')
+  throw new Error('Supabase credentials are missing. Please check your environment variables: VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY')
 }
 
 // Optimized client configuration for 100+ concurrent users

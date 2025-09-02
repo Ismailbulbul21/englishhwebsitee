@@ -13,6 +13,8 @@ import Progress from './components/Progress'
 import VoiceChallengePage from './components/VoiceChallengePage'
 import AboutPage from './components/AboutPage'
 import LoadingSpinner from './components/LoadingSpinner'
+import PrivacyPolicy from './components/PrivacyPolicy'
+import Contact from './components/Contact'
 
 function App() {
   const [user, setUser] = useState(null)
@@ -23,6 +25,30 @@ function App() {
   // Prevent duplicate initializations
   const initializingRef = useRef(false)
   const authSubscriptionRef = useRef(null)
+
+  // Load Google AdSense script for monetization
+  useEffect(() => {
+    const loadAdSense = () => {
+      // Only load if not already loaded
+      if (!window.adsbygoogle && !document.querySelector('script[src*="adsbygoogle"]')) {
+        const script = document.createElement('script');
+        script.src = 'https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js';
+        script.async = true;
+        script.crossOrigin = 'anonymous';
+        script.onload = () => {
+          console.log('✅ AdSense script loaded successfully');
+        };
+        script.onerror = () => {
+          console.warn('⚠️ AdSense script failed to load');
+        };
+        document.head.appendChild(script);
+      }
+    };
+
+    // Load AdSense after a short delay to not interfere with app initialization
+    const timer = setTimeout(loadAdSense, 2000);
+    return () => clearTimeout(timer);
+  }, []);
 
   // Global debug function for clearing stuck states
   useEffect(() => {
@@ -366,6 +392,8 @@ function App() {
             <Route path="/progress" element={<Progress user={user} />} />
             <Route path="/voice-challenge" element={<VoiceChallengePage user={user} />} />
             <Route path="/about" element={<AboutPage />} />
+            <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+            <Route path="/contact" element={<Contact />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         )}
