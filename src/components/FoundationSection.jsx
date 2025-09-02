@@ -1,14 +1,9 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 
-export default function FoundationSection({ playAudio, user }) {
+export default function FoundationSection({ playAudio }) {
   // Foundation Category Navigation
   const [activeCategory, setActiveCategory] = useState(null)
-  
-  // Safety check - only show for beginners
-  if (!user || user.english_level !== 'beginner') {
-    return null
-  }
   
   // Essential Words state
   const [selectedWordCategory, setSelectedWordCategory] = useState(null)

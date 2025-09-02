@@ -18,9 +18,7 @@ export default function Lessons({ user }) {
   const [selectedLesson, setSelectedLesson] = useState(null)
   const [userProgress, setUserProgress] = useState({})
   const [loading, setLoading] = useState(true)
-  const [activeTab, setActiveTab] = useState(
-    user?.english_level === 'beginner' ? 'foundation' : 'grammar'
-  )
+  const [activeTab, setActiveTab] = useState(user?.english_level === 'beginner' ? 'foundation' : 'grammar')
   const [completionMessage, setCompletionMessage] = useState('')
   
   // NEW: Enhanced lesson features
@@ -99,15 +97,17 @@ export default function Lessons({ user }) {
   // 🔧 useEffect after function definitions to avoid dependency issues
   useEffect(() => {
     if (user) {
-      // Ensure non-beginners don't have foundation tab active
-      if (user.english_level !== 'beginner' && activeTab === 'foundation') {
-        setActiveTab('grammar')
-      }
-      
       fetchLessons()
       fetchUserProgress()
     }
   }, [user, fetchLessons, fetchUserProgress])
+
+  // Auto-switch away from foundation tab if user is not beginner
+  useEffect(() => {
+    if (user?.english_level !== 'beginner' && activeTab === 'foundation') {
+      setActiveTab('grammar')
+    }
+  }, [user?.english_level, activeTab])
 
   // 🚀 ENHANCED QUIZ LOGIC: Mandatory 100% completion with better feedback
   const submitQuizAnswer = (questionIndex, selectedAnswer) => {
@@ -125,7 +125,7 @@ export default function Lessons({ user }) {
     
     const somaliFeedback = showSomaliSupport 
       ? (isCorrect 
-          ? `�� Fiican! ${question.explanation_somali || question.explanation}` 
+          ? `🎉 Fiican! ${question.explanation_somali || question.explanation}` 
           : `💡 Ma aha kan saxda ah. ${question.explanation_somali || question.explanation}`)
       : ''
     
@@ -1409,8 +1409,7 @@ export default function Lessons({ user }) {
     const startTime = performance.now()
     
     const result = {
-      // Only show foundation lessons for beginners
-      foundationLessons: user?.english_level === 'beginner' ? lessons.filter(l => l.type === 'foundation') : [],
+      foundationLessons: lessons.filter(l => l.type === 'foundation'),
       grammarLessons: lessons.filter(l => l.type === 'grammar'),
       vocabularyLessons: lessons.filter(l => l.type === 'vocabulary'),
       lifeSkillsLessons: [] // HIDDEN: lessons.filter(l => ['conversations', 'health', 'travel', 'work'].includes(l.type))
@@ -1430,16 +1429,14 @@ export default function Lessons({ user }) {
     
     const map = {}
     
-    // Pre-calculate for foundation lessons (no locking) - only for beginners
-    if (foundationLessons.length > 0) {
-      foundationLessons.forEach((lesson, index) => {
-        const progress = userProgress[lesson.id]
-        const isCompleted = progress?.is_completed
-        const isLocked = false // Foundation lessons are never locked
-        
-        map[lesson.id] = { progress, isCompleted, isLocked, index, type: 'foundation' }
-      })
-    }
+    // Pre-calculate for foundation lessons (no locking)
+    foundationLessons.forEach((lesson, index) => {
+      const progress = userProgress[lesson.id]
+      const isCompleted = progress?.is_completed
+      const isLocked = false // Foundation lessons are never locked
+      
+      map[lesson.id] = { progress, isCompleted, isLocked, index, type: 'foundation' }
+    })
     
     // Pre-calculate for grammar lessons
     grammarLessons.forEach((lesson, index) => {
@@ -1555,10 +1552,8 @@ export default function Lessons({ user }) {
             {/* Lesson Type Tabs - Responsive */}
             <div className="flex space-x-1 bg-gray-800 p-1 rounded-lg mb-6 sm:mb-8">
               {[
-                // Only show Foundation tab for beginners
-                ...(user?.english_level === 'beginner' ? [
-                  { key: 'foundation', label: 'Pre-English', icon: '🔤', shortLabel: 'Foundation' }
-                ] : []),
+                // Only show foundation tab for beginners
+                ...(user?.english_level === 'beginner' ? [{ key: 'foundation', label: 'Pre-English', icon: '🔤', shortLabel: 'Foundation' }] : []),
                 { key: 'grammar', label: 'Grammar', icon: '📝', shortLabel: 'Grammar' },
                 { key: 'vocabulary', label: 'Vocabulary', icon: '📚', shortLabel: 'Vocab' }
                 // { key: 'life_skills', label: 'Life Skills', icon: '🌟', shortLabel: 'Skills' } // HIDDEN
@@ -1591,8 +1586,8 @@ export default function Lessons({ user }) {
             </div>
 
             {/* Foundation Content - Beautiful Modern Design */}
-            {activeTab === 'foundation' && (
-              <FoundationSection playAudio={playAudio} user={user} />
+            {activeTab === 'foundation' && user?.english_level === 'beginner' && (
+              <FoundationSection playAudio={playAudio} />
             )}
 
             {/* Life Skills Sub-Categories - Only show when Life Skills tab is active */}
@@ -1625,7 +1620,7 @@ export default function Lessons({ user }) {
             )} */}
 
             {/* Lessons Grid - Responsive */}
-            {activeTab === 'foundation' ? (
+            {activeTab === 'foundation' && user?.english_level === 'beginner' ? (
               // Foundation content is already shown above
               null
             ) : (
@@ -1715,14 +1710,12 @@ export default function Lessons({ user }) {
                   </div>
                   <div className="text-sm sm:text-base text-gray-400 mt-1">Overall Progress</div>
                 </div>
-                {user?.english_level === 'beginner' && (
-                  <div className="text-center p-4 bg-gray-700/50 rounded-lg">
-                    <div className="text-2xl sm:text-3xl font-bold text-purple-400">
-                      {foundationLessons.filter(l => userProgress[l.id]?.is_completed).length}
-                    </div>
-                    <div className="text-sm sm:text-base text-gray-400 mt-1">Foundation</div>
+                <div className="text-center p-4 bg-gray-700/50 rounded-lg">
+                  <div className="text-2xl sm:text-3xl font-bold text-purple-400">
+                    {foundationLessons.filter(l => userProgress[l.id]?.is_completed).length}
                   </div>
-                )}
+                  <div className="text-sm sm:text-base text-gray-400 mt-1">Foundation</div>
+                </div>
                 <div className="text-center p-4 bg-gray-700/50 rounded-lg">
                   <div className="text-2xl sm:text-3xl font-bold text-yellow-400">
                     {user?.current_streak || 0}
