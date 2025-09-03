@@ -26,29 +26,29 @@ function App() {
   const initializingRef = useRef(false)
   const authSubscriptionRef = useRef(null)
 
-  // Load Google AdSense script for monetization
-  useEffect(() => {
-    const loadAdSense = () => {
-      // Only load if not already loaded
-      if (!window.adsbygoogle && !document.querySelector('script[src*="adsbygoogle"]')) {
-        const script = document.createElement('script');
-        script.src = 'https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js';
-        script.async = true;
-        script.crossOrigin = 'anonymous';
-        script.onload = () => {
-          console.log('✅ AdSense script loaded successfully');
-        };
-        script.onerror = () => {
-          console.warn('⚠️ AdSense script failed to load');
-        };
-        document.head.appendChild(script);
-      }
-    };
+  // Load Google AdSense script for monetization - DISABLED UNTIL APPROVED
+  // useEffect(() => {
+  //   const loadAdSense = () => {
+  //     // Only load if not already loaded
+  //     if (!window.adsbygoogle && !document.querySelector('script[src*="adsbygoogle"]')) {
+  //       const script = document.createElement('script');
+  //       script.src = 'https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js';
+  //       script.async = true;
+  //       script.crossOrigin = 'anonymous';
+  //       script.onload = () => {
+  //         console.log('✅ AdSense script loaded successfully');
+  //       };
+  //       script.onerror = () => {
+  //         console.warn('⚠️ AdSense script failed to load');
+  //       };
+  //       document.head.appendChild(script);
+  //       }
+  //     };
 
-    // Load AdSense after a short delay to not interfere with app initialization
-    const timer = setTimeout(loadAdSense, 2000);
-    return () => clearTimeout(timer);
-  }, []);
+  //     // Load AdSense after a short delay to not interfere with app initialization
+  //     const timer = setTimeout(loadAdSense, 2000);
+  //     return () => clearTimeout(timer);
+  //   }, []);
 
   // Global debug function for clearing stuck states
   useEffect(() => {
