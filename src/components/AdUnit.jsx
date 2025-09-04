@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect } from 'react';
 
 const AdUnit = ({ 
   adClient, 
@@ -9,28 +9,29 @@ const AdUnit = ({
   style = {},
   responsive = true 
 }) => {
-  const adRef = useRef(null);
 
   useEffect(() => {
-    // Only load AdSense script if not already loaded
-    if (!window.adsbygoogle) {
-      const script = document.createElement('script');
-      script.src = 'https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js';
-      script.async = true;
-      script.crossOrigin = 'anonymous';
-      script.onload = () => {
-        // Push ad after script loads
-        if (window.adsbygoogle && adRef.current) {
-          (window.adsbygoogle = window.adsbygoogle || []).push({});
-        }
-      };
-      document.head.appendChild(script);
-    } else {
-      // Script already loaded, push ad immediately
-      if (window.adsbygoogle && adRef.current) {
-        (window.adsbygoogle = window.adsbygoogle || []).push({});
-      }
-    }
+    // AdSense script loading DISABLED until approval
+    // This prevents "Google-served ads on screens without publisher-content" violation
+    if (!adClient || !adSlot) return; // Only attempt to load if client and slot are provided
+
+    // COMMENTED OUT UNTIL ADSENSE APPROVAL:
+    // if (!window.adsbygoogle) {
+    //   const script = document.createElement('script');
+    //   script.src = 'https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js';
+    //   script.async = true;
+    //   script.crossOrigin = 'anonymous';
+    //   script.onload = () => {
+    //     if (window.adsbygoogle && adRef.current) {
+    //       (window.adsbygoogle = window.adsbygoogle || []).push({});
+    //     }
+    //   };
+    //   document.head.appendChild(script);
+    // } else {
+    //   if (window.adsbygoogle && adRef.current) {
+    //     (window.adsbygoogle = window.adsbygoogle || []).push({});
+    //   }
+    // }
   }, [adClient, adSlot]);
 
   // Don't render anything if no ad client or slot provided (wait for approval)
@@ -47,20 +48,19 @@ const AdUnit = ({
         </div>
       )}
       
-      {/* AdSense Ad Unit */}
-      <ins 
-        ref={adRef}
-        className="adsbygoogle"
+      {/* AdSense Ad Unit - DISABLED UNTIL APPROVAL */}
+      <div 
         style={{ 
           display: 'block',
           textAlign: 'center',
           ...style 
         }}
-        data-ad-client={adClient}
-        data-ad-slot={adSlot}
-        data-ad-format={format}
-        data-full-width-responsive={responsive ? 'true' : 'false'}
-      />
+      >
+        {/* Ad unit will be enabled after AdSense approval */}
+        <div className="text-center text-gray-400 py-8">
+          Ad space reserved for after approval
+        </div>
+      </div>
     </div>
   );
 };
