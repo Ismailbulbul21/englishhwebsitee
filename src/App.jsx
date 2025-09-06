@@ -15,6 +15,7 @@ import AboutPage from './components/AboutPage'
 import LoadingSpinner from './components/LoadingSpinner'
 import PrivacyPolicy from './components/PrivacyPolicy'
 import Contact from './components/Contact'
+import InstallPrompt from './components/InstallPrompt'
 
 function App() {
   const [user, setUser] = useState(null)
@@ -397,6 +398,7 @@ function App() {
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         )}
+        <InstallPrompt />
       </div>
     </Router>
   )
