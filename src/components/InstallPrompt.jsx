@@ -74,8 +74,8 @@ export default function InstallPrompt() {
               <Smartphone className="h-6 w-6 text-white" />
             </div>
             <div>
-              <h3 className="text-white font-bold text-sm">Install TikTok English</h3>
-              <p className="text-blue-100 text-xs">Get the app experience</p>
+              <h3 className="text-white font-bold text-sm">Soo dagso hadalhub</h3>
+              <p className="text-blue-100 text-xs">App ahaan u isticmaal</p>
             </div>
           </div>
           <button
@@ -89,12 +89,12 @@ export default function InstallPrompt() {
         {isIOS ? (
           <div className="space-y-3">
             <p className="text-white text-sm">
-              🇸🇴 <strong>Ku rakib app-ka:</strong>
+              🇸🇴 <strong> Qaabka loo dagsado:</strong>
             </p>
             <div className="text-white text-xs space-y-1">
-              <p>1. Gali Share button-ka (⬆️)</p>
+              <p>1. Taabo Share button-ka (⬆️)</p>
               <p>2. Dooro "Add to Home Screen"</p>
-              <p>3. Gali "Add"</p>
+              <p>3. ka dibna "Add" ku dhufo</p>
             </div>
             <p className="text-white text-sm">
               🇺🇸 <strong>Install the app:</strong>
@@ -108,7 +108,7 @@ export default function InstallPrompt() {
         ) : (
           <div className="space-y-3">
             <p className="text-white text-sm">
-              🇸🇴 <strong>Ku rakib app-ka:</strong> Gali "Install" button-ka hoose
+              🇸🇴 <strong>Soo dagso websiteka :</strong> Taabo "Install" button-ka hoose
             </p>
             <p className="text-white text-sm">
               🇺🇸 <strong>Install the app:</strong> Tap the "Install" button below
