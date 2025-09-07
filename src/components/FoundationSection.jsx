@@ -906,12 +906,8 @@ export default function FoundationSection({ playAudio }) {
                         
                         {/* Simple Badge */}
                         <div className="flex justify-center mb-3">
-                          <span className={`text-xs px-3 py-1 rounded-full font-medium ${
-                            scenario.difficulty_level === 'Beginner' ? 'bg-green-600/30 text-green-300 border border-green-500/30' :
-                            scenario.difficulty_level === 'Intermediate' ? 'bg-yellow-600/30 text-yellow-300 border border-yellow-500/30' :
-                            'bg-red-600/30 text-red-300 border border-red-500/30'
-                          }`}>
-                            {scenario.difficulty_level} • {scenario.relevance_percentage}% relevant
+                          <span className="text-xs px-3 py-1 rounded-full font-medium bg-green-600/30 text-green-300 border border-green-500/30">
+                            Beginner • {scenario.relevance_percentage}% relevant
                           </span>
                         </div>
                         
@@ -1019,7 +1015,7 @@ export default function FoundationSection({ playAudio }) {
                       <p className="text-gray-300">{currentConversation.level_description}</p>
                     </div>
 
-                    {/* Conversation Dialogues */}
+                    {/* Conversation Dialogues (Levels 1-3) */}
                     {currentConversation.conversation_data.dialogues && (
                       <div className="space-y-4">
                         {currentConversation.conversation_data.dialogues.map((dialogue, dialogueIndex) => (
@@ -1093,6 +1089,70 @@ export default function FoundationSection({ playAudio }) {
                                         🔊
                                       </button>
                                     </div>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Interactive Scenarios (Level 4) */}
+                    {currentConversation.conversation_data.scenarios && (
+                      <div className="space-y-6">
+                        {currentConversation.conversation_data.scenarios.map((scenario, scenarioIndex) => (
+                          <div key={scenarioIndex} className="bg-gradient-to-r from-purple-600/10 to-blue-600/10 rounded-2xl p-6 border border-purple-500/30 shadow-lg">
+                            {/* Scenario Header */}
+                            <div className="mb-6">
+                              <h5 className="text-lg font-bold text-white mb-2 flex items-center gap-2">
+                                🎯 Interactive Scenario
+                              </h5>
+                              <div className="bg-white/5 rounded-xl p-4 border border-white/10">
+                                <h6 className="text-purple-300 font-semibold mb-2">Situation:</h6>
+                                <p className="text-white text-sm mb-3">{scenario.situation}</p>
+                                
+                                <h6 className="text-purple-300 font-semibold mb-2">Your Goal:</h6>
+                                <p className="text-white text-sm mb-3">{scenario.your_goal}</p>
+                                
+                                <h6 className="text-purple-300 font-semibold mb-2">Other Person:</h6>
+                                <p className="text-white text-sm">{scenario.other_person}</p>
+                              </div>
+                            </div>
+
+                            {/* Interactive Choices */}
+                            <div className="space-y-4">
+                              {scenario.choices.map((choice, choiceIndex) => (
+                                <div key={choiceIndex} className="bg-white/5 rounded-xl p-4 border border-white/10">
+                                  <h6 className="text-white font-semibold mb-3 text-sm">
+                                    {choice.prompt}
+                                  </h6>
+                                  
+                                  <div className="space-y-2">
+                                    {choice.options.map((option, optionIndex) => (
+                                      <div key={optionIndex} className="group">
+                                        <button className="w-full text-left p-3 rounded-lg border border-white/10 bg-white/5 hover:bg-white/10 transition-all duration-200 hover:border-purple-400/50">
+                                          <div className="flex items-center justify-between">
+                                            <span className="text-white text-sm">{option.text}</span>
+                                            <div className="flex items-center gap-2">
+                                              <div className="flex">
+                                                {[...Array(5)].map((_, starIndex) => (
+                                                  <span key={starIndex} className={`text-xs ${
+                                                    starIndex < option.score ? 'text-yellow-400' : 'text-gray-500'
+                                                  }`}>⭐</span>
+                                                ))}
+                                              </div>
+                                              <span className="text-xs text-gray-400">({option.score}/5)</span>
+                                            </div>
+                                          </div>
+                                        </button>
+                                        
+                                        {/* Feedback (shown on hover or click) */}
+                                        <div className="mt-2 p-2 bg-blue-600/20 border border-blue-500/30 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                                          <p className="text-blue-200 text-xs">{option.feedback}</p>
+                                        </div>
+                                      </div>
+                                    ))}
                                   </div>
                                 </div>
                               ))}
